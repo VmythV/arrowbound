@@ -15,6 +15,7 @@ import { LEVEL_CONFIGS, type LevelConfig } from "../config/level.config";
 import { Bow } from "../entities/Bow";
 import { Player } from "../entities/Player";
 import { ProjectileSystem, type ProjectileResolution } from "../systems/ProjectileSystem";
+import { ShotFeedbackSystem } from "../systems/ShotFeedbackSystem";
 import { ShootingSystem } from "../systems/ShootingSystem";
 
 const INTRO_OFFSET_X = 24;
@@ -25,6 +26,7 @@ export class MainGameScene extends Phaser.Scene {
   private bow: Bow | undefined;
   private shooting: ShootingSystem | undefined;
   private projectiles: ProjectileSystem | undefined;
+  private shotFeedback: ShotFeedbackSystem | undefined;
   private level: LevelConfig | undefined;
   private spaceKey: Phaser.Input.Keyboard.Key | undefined;
 
@@ -56,12 +58,14 @@ export class MainGameScene extends Phaser.Scene {
       PLAYER_POSITION.x - INTRO_OFFSET_X,
       PLAYER_POSITION.y,
       ASSET_KEYS.playerBody,
+      ASSET_KEYS.playerDrawArm,
     );
     this.bow = new Bow(
       this,
       ARROW_SPAWN_POSITION.x - INTRO_OFFSET_X,
       ARROW_SPAWN_POSITION.y,
       ASSET_KEYS.bowBasic,
+      ASSET_KEYS.bowStringBasic,
       this.shooting.bowAngle,
     );
     const target = this.add
@@ -78,6 +82,12 @@ export class MainGameScene extends Phaser.Scene {
       },
       onResolved: this.handleProjectileResolved,
     });
+    this.shotFeedback = new ShotFeedbackSystem(
+      this,
+      ASSET_KEYS.missDust,
+      GROUND_Y,
+      GAME_WIDTH,
+    );
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
     const keyboard = this.input.keyboard;
@@ -96,7 +106,7 @@ export class MainGameScene extends Phaser.Scene {
       ease: "Cubic.Out",
     });
     this.tweens.add({
-      targets: [this.player.image, this.bow.image],
+      targets: [...this.player.gameObjects, ...this.bow.gameObjects],
       x: `+=${INTRO_OFFSET_X}`,
       duration: 300,
       ease: "Cubic.Out",
@@ -123,6 +133,10 @@ export class MainGameScene extends Phaser.Scene {
     const isPaused = services.state.snapshot.isGameplayPaused;
     services.clock.setPaused(isPaused);
     services.clock.update(delta);
+    this.player?.setAnimationsPaused(isPaused);
+    bow.setAnimationsPaused(isPaused);
+    this.projectiles?.setAnimationsPaused(isPaused);
+    this.shotFeedback?.setPaused(isPaused);
     bow.setAngle(shooting.update(delta));
     if (!isPaused) {
       this.projectiles?.update(delta);
@@ -163,22 +177,29 @@ export class MainGameScene extends Phaser.Scene {
       gravity: level.arrow.gravity,
       runtimeData: { source: "player" },
     });
+    this.bow?.playRelease();
+    this.player?.playShotRecoil();
     services.events.emit("shot:fired", { angle: shot.angle });
   }
 
   private readonly handleProjectileResolved = (resolution: ProjectileResolution): void => {
+    if (!resolution.hit) {
+      this.shotFeedback?.showMiss(resolution.point);
+    }
     this.services?.events.emit("arrow:resolved", resolution);
   };
 
   private handleShutdown(): void {
     this.input.off(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
     this.spaceKey?.off("down", this.handleShootIntent, this);
+    this.shotFeedback?.destroy();
     this.projectiles?.destroy();
     this.services?.clock.clear();
     this.player = undefined;
     this.bow = undefined;
     this.shooting = undefined;
     this.projectiles = undefined;
+    this.shotFeedback = undefined;
     this.level = undefined;
     this.spaceKey = undefined;
     this.services = undefined;

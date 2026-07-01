@@ -22,6 +22,8 @@ export class Arrow extends Phaser.GameObjects.Image {
   private elapsedSeconds = 0;
   private gravity = 0;
   private hitHoldLeftMs = 0;
+  private hitTween: Phaser.Tweens.Tween | undefined;
+  private animationsPaused = false;
   runtimeData: ArrowRuntimeData | undefined;
   targetPlaneChecked = false;
   outcomeReported = false;
@@ -82,8 +84,22 @@ export class Arrow extends Phaser.GameObjects.Image {
   }
 
   holdAt(point: Point, durationMs: number): void {
+    this.hitTween?.stop();
     this.setPosition(point.x, point.y);
     this.hitHoldLeftMs = durationMs;
+    const restingRotation = this.rotation;
+    this.hitTween = this.scene.tweens.add({
+      targets: this,
+      rotation: restingRotation + Phaser.Math.DegToRad(1.5),
+      duration: durationMs / 2,
+      ease: "Sine.InOut",
+      yoyo: true,
+      paused: this.animationsPaused,
+      onComplete: () => {
+        this.setRotation(restingRotation);
+        this.hitTween = undefined;
+      },
+    });
   }
 
   advanceHitHold(deltaMs: number): boolean {
@@ -91,7 +107,22 @@ export class Arrow extends Phaser.GameObjects.Image {
     return this.hitHoldLeftMs === 0;
   }
 
+  setAnimationPaused(paused: boolean): void {
+    if (paused === this.animationsPaused) {
+      return;
+    }
+    this.animationsPaused = paused;
+    if (paused) {
+      this.hitTween?.pause();
+    } else {
+      this.hitTween?.resume();
+    }
+  }
+
   recycle(): void {
+    this.hitTween?.stop();
+    this.hitTween = undefined;
+    this.animationsPaused = false;
     this.runtimeData = undefined;
     this.targetPlaneChecked = false;
     this.outcomeReported = false;

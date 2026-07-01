@@ -89,7 +89,6 @@ export class ProjectileSystem {
             arrow.holdAt(targetResolution.point, HIT_HOLD_DURATION_MS);
             continue;
           }
-          this.report(arrow, false, targetResolution.point, "target_miss");
         }
       }
 
@@ -107,6 +106,15 @@ export class ProjectileSystem {
       const arrow = child as Arrow;
       if (arrow.active) {
         this.release(arrow);
+      }
+    }
+  }
+
+  setAnimationsPaused(paused: boolean): void {
+    for (const child of this.pool.getChildren()) {
+      const arrow = child as Arrow;
+      if (arrow.active) {
+        arrow.setAnimationPaused(paused);
       }
     }
   }
