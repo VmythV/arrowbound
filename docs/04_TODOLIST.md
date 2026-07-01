@@ -55,28 +55,28 @@
 
 ## 3. 阶段 0：工程与基础架构
 
-- [ ] 初始化 Vite + TypeScript + Phaser 4.x 工程
-- [ ] 配置 1280 × 720 画布、桌面端等比缩放和居中显示
-- [ ] 建立 `scenes`、`entities`、`systems`、`config`、`state`、`save`、`utils` 目录
-- [ ] 实现 BootScene、PreloadScene、MainGameScene 和 UIScene
-- [ ] 建立统一的游戏事件或消息机制，避免系统之间直接互相修改 UI
-- [ ] 建立 Level、Shop、Blessing、Robot 和 Challenge 配置类型
-- [ ] 建立 SaveData、RuntimeState 和默认存档
-- [ ] 建立 StateController、RewardSystem、RandomService 和统一游戏时钟
-- [ ] 建立可单元测试的弹道求解与靶面连续穿越检测工具
-- [ ] 建立 `public/assets/svg/` 分类目录和 `public/assets/audio/` 目录
-- [ ] 建立 `asset-manifest.ts`，统一管理 SVG key、路径和加载尺寸
-- [ ] 使用 SVG 准备玩家、弓、箭、靶子、金币、机器人、宠物和宝箱占位资源
-- [ ] 增加全仓库 emoji 扫描命令
+- [x] 初始化 Vite + TypeScript + Phaser 4.x 工程
+- [x] 配置 1280 × 720 画布、桌面端等比缩放和居中显示
+- [x] 建立 `scenes`、`entities`、`systems`、`config`、`state`、`save`、`utils` 目录
+- [x] 实现 BootScene、PreloadScene、MainGameScene 和 UIScene
+- [x] 建立统一的游戏事件或消息机制，避免系统之间直接互相修改 UI
+- [x] 建立 Level、Shop、Blessing、Robot 和 Challenge 配置类型
+- [x] 建立 SaveData、RuntimeState 和默认存档
+- [x] 建立 StateController、RewardSystem、RandomService 和统一游戏时钟
+- [x] 建立可单元测试的弹道求解与靶面连续穿越检测工具
+- [x] 建立 `public/assets/svg/` 分类目录和 `public/assets/audio/` 目录
+- [x] 建立 `asset-manifest.ts`，统一管理 SVG key、路径和加载尺寸
+- [x] 使用 SVG 准备玩家、弓、箭、靶子、金币、机器人、宠物和宝箱占位资源
+- [x] 增加全仓库 emoji 扫描命令
 
 验收条件：
 
-- [ ] `npm run dev` 可以启动游戏
+- [x] `npm run dev` 可以启动游戏
 - [ ] 浏览器中画布尺寸和缩放正确
 - [ ] 场景可以按 Boot → Preload → MainGame 正常进入
-- [ ] TypeScript 构建无错误
-- [ ] 所有视觉占位素材均从资源目录加载，没有内联 SVG 或最终 Phaser Graphics 替代物
-- [ ] emoji 扫描结果为空
+- [x] TypeScript 构建无错误
+- [x] 所有视觉占位素材均从资源目录加载，没有内联 SVG 或最终 Phaser Graphics 替代物
+- [x] emoji 扫描结果为空
 
 ---
 

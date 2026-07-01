@@ -1,0 +1,28 @@
+{
+  "name": "arrowbound",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:emoji": "node scripts/check-emoji.mjs",
+    "check": "npm run typecheck && npm run test && npm run check:emoji && npm run build"
+  },
+  "dependencies": {
+    "phaser": "4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.0.1",
+    "typescript": "6.0.3",
+    "vite": "8.1.2",
+    "vitest": "4.1.9"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
