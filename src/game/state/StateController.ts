@@ -100,6 +100,17 @@ export class StateController {
     return true;
   }
 
+  addChallengeScore(value: number): void {
+    if (!Number.isFinite(value) || value < 0) {
+      throw new RangeError("Challenge score increment must be finite and non-negative");
+    }
+    if (!this.state.isChallengeActive || value === 0) {
+      return;
+    }
+    this.state.challengeCoinsCollected += value;
+    this.emitStateChanged();
+  }
+
   advanceShotCooldown(deltaSeconds: number): void {
     if (!Number.isFinite(deltaSeconds) || deltaSeconds < 0) {
       throw new RangeError("Shot cooldown delta must be finite and non-negative");

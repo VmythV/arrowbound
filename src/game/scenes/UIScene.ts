@@ -1,12 +1,16 @@
 import * as Phaser from "phaser";
 import { getGameServices, type GameServices } from "../GameServices";
 import { ASSET_KEYS } from "../config/asset-manifest";
-import { GAME_WIDTH, SCENE_KEYS } from "../config/game.constants";
+import { COIN_HUD_ANCHOR, GAME_WIDTH, SCENE_KEYS } from "../config/game.constants";
 import { LEVEL_CONFIGS } from "../config/level.config";
 
 export class UIScene extends Phaser.Scene {
   private services: GameServices | undefined;
   private statusText: Phaser.GameObjects.Text | undefined;
+  private coinIcon: Phaser.GameObjects.Image | undefined;
+  private coinsText: Phaser.GameObjects.Text | undefined;
+  private coinCountTween: Phaser.Tweens.Tween | undefined;
+  private displayedCoins = 0;
 
   constructor() {
     super(SCENE_KEYS.ui);
@@ -32,6 +36,19 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(1, 0);
 
+    this.coinIcon = this.add
+      .image(COIN_HUD_ANCHOR.x, COIN_HUD_ANCHOR.y, ASSET_KEYS.coinBasic)
+      .setScale(0.5);
+    this.displayedCoins = this.services.ledger.coins;
+    this.coinsText = this.add
+      .text(COIN_HUD_ANCHOR.x + 22, COIN_HUD_ANCHOR.y, this.formatCoins(this.displayedCoins), {
+        color: "#ffe9a0",
+        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        fontSize: "22px",
+        fontStyle: "bold",
+      })
+      .setOrigin(0, 0.5);
+
     this.statusText = this.add
       .text(GAME_WIDTH / 2, 675, "正在进入靶场", {
         color: "#e8ddc3",
@@ -43,7 +60,37 @@ export class UIScene extends Phaser.Scene {
     this.services.events.on("game:ready", this.handleGameReady, this);
     this.services.events.on("shot:fired", this.handleShotFired, this);
     this.services.events.on("arrow:resolved", this.handleArrowResolved, this);
+    this.services.events.on("coin:collected", this.handleCoinCollected, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
+  }
+
+  private formatCoins(value: number): string {
+    return `${Math.round(value)}`;
+  }
+
+  private handleCoinCollected({ coins }: { coins: number }): void {
+    const coinsText = this.coinsText;
+    if (coinsText === undefined) {
+      return;
+    }
+    this.coinCountTween?.stop();
+    const from = this.displayedCoins;
+    this.displayedCoins = coins;
+    this.coinCountTween = this.tweens.addCounter({
+      from,
+      to: coins,
+      duration: 200,
+      ease: "Cubic.Out",
+      onUpdate: (tween) => coinsText.setText(this.formatCoins(tween.getValue() ?? coins)),
+      onComplete: () => coinsText.setText(this.formatCoins(coins)),
+    });
+    this.tweens.add({
+      targets: this.coinIcon,
+      scale: 0.58,
+      duration: 100,
+      ease: "Quad.Out",
+      yoyo: true,
+    });
   }
 
   private handleGameReady(): void {
@@ -62,6 +109,11 @@ export class UIScene extends Phaser.Scene {
     this.services?.events.off("game:ready", this.handleGameReady, this);
     this.services?.events.off("shot:fired", this.handleShotFired, this);
     this.services?.events.off("arrow:resolved", this.handleArrowResolved, this);
+    this.services?.events.off("coin:collected", this.handleCoinCollected, this);
+    this.coinCountTween?.stop();
+    this.coinCountTween = undefined;
+    this.coinIcon = undefined;
+    this.coinsText = undefined;
     this.services = undefined;
     this.statusText = undefined;
   }

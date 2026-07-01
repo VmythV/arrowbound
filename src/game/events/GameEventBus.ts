@@ -2,12 +2,15 @@ import * as Phaser from "phaser";
 import type { PendingReward, SaveData } from "../state/SaveData";
 import type { GamePhase, ModalType, RuntimeState } from "../state/RuntimeState";
 import type { ProjectileResolution } from "../systems/ProjectileSystem";
+import type { CoinSource } from "../systems/coin-income";
+import type { Point } from "../utils/ballistics";
 
 export type GameEventMap = {
   "assets:progress": { progress: number };
   "game:ready": { levelId: number };
   "shot:fired": { angle: number };
   "arrow:resolved": ProjectileResolution;
+  "coin:collected": { value: number; coins: number; source: CoinSource; point?: Point };
   "phase:changed": { previous: GamePhase; current: GamePhase; state: Readonly<RuntimeState> };
   "modal:changed": { modal: ModalType; state: Readonly<RuntimeState> };
   "state:changed": { state: Readonly<RuntimeState> };

@@ -3,6 +3,7 @@ import { getGameServices, type GameServices } from "../GameServices";
 import { ASSET_KEYS } from "../config/asset-manifest";
 import {
   ARROW_SPAWN_POSITION,
+  COIN_HUD_ANCHOR,
   GAME_HEIGHT,
   GAME_WIDTH,
   GROUND_Y,
@@ -14,6 +15,8 @@ import {
 import { LEVEL_CONFIGS, type LevelConfig } from "../config/level.config";
 import { Bow } from "../entities/Bow";
 import { Player } from "../entities/Player";
+import { CoinDropSystem } from "../systems/CoinDropSystem";
+import { computeCoinValue, type CoinIncomeContext } from "../systems/coin-income";
 import { ProjectileSystem, type ProjectileResolution } from "../systems/ProjectileSystem";
 import type { RingScoringConfig } from "../systems/ring-scoring";
 import { ShotFeedbackSystem } from "../systems/ShotFeedbackSystem";
@@ -28,6 +31,8 @@ export class MainGameScene extends Phaser.Scene {
   private shooting: ShootingSystem | undefined;
   private projectiles: ProjectileSystem | undefined;
   private shotFeedback: ShotFeedbackSystem | undefined;
+  private coins: CoinDropSystem | undefined;
+  private coinIncome: CoinIncomeContext | undefined;
   private target: Phaser.GameObjects.Image | undefined;
   private level: LevelConfig | undefined;
   private spaceKey: Phaser.Input.Keyboard.Key | undefined;
@@ -92,6 +97,14 @@ export class MainGameScene extends Phaser.Scene {
       GROUND_Y,
       GAME_WIDTH,
     );
+    this.coinIncome = this.buildCoinIncome();
+    const ledger = this.services.ledger;
+    this.coins = new CoinDropSystem(this, {
+      poolTexture: ASSET_KEYS.coinBasic,
+      hudAnchor: COIN_HUD_ANCHOR,
+      groundY: GROUND_Y,
+      onCollect: (input) => ledger.collectCoin(input),
+    });
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
     const keyboard = this.input.keyboard;
@@ -141,6 +154,7 @@ export class MainGameScene extends Phaser.Scene {
     bow.setAnimationsPaused(isPaused);
     this.projectiles?.setAnimationsPaused(isPaused);
     this.shotFeedback?.setPaused(isPaused);
+    this.coins?.setPaused(isPaused);
     bow.setAngle(shooting.update(delta));
     if (!isPaused) {
       this.projectiles?.update(delta);
@@ -155,6 +169,16 @@ export class MainGameScene extends Phaser.Scene {
       preciseAimLevel: 0,
       centerBlessingMultiplier: 1,
       wideTargetMultiplier: 1,
+    };
+  }
+
+  private buildCoinIncome(): CoinIncomeContext {
+    // 商店等级与金币祝福由后续阶段接入，当前使用无加成的基础倍率。
+    return {
+      greedyCoinLevel: 0,
+      robotGreedLevel: 0,
+      allCoinMultiplier: 1,
+      tenRingMultiplier: 1,
     };
   }
 
@@ -203,23 +227,49 @@ export class MainGameScene extends Phaser.Scene {
   private readonly handleProjectileResolved = (resolution: ProjectileResolution): void => {
     if (resolution.hit) {
       this.shotFeedback?.showHit(resolution.point, resolution.ring, resolution.runtimeData.source);
+      this.spawnCoinForHit(resolution);
     } else {
       this.shotFeedback?.showMiss(resolution.point);
     }
     this.services?.events.emit("arrow:resolved", resolution);
   };
 
+  private spawnCoinForHit(resolution: ProjectileResolution): void {
+    const coins = this.coins;
+    const income = this.coinIncome;
+    if (coins === undefined || income === undefined) {
+      return;
+    }
+    const source = resolution.runtimeData.source;
+    const value = computeCoinValue(resolution.ring, source, income);
+    if (value <= 0) {
+      return;
+    }
+    const challengeRunId = this.services?.state.snapshot.challengeRunId;
+    coins.spawn({
+      origin: resolution.point,
+      value,
+      source,
+      ...(challengeRunId !== undefined ? { challengeRunId } : {}),
+    });
+  }
+
   private handleShutdown(): void {
     this.input.off(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
     this.spaceKey?.off("down", this.handleShootIntent, this);
     this.shotFeedback?.destroy();
     this.projectiles?.destroy();
+    this.coins?.releaseAll();
+    this.coins?.destroy();
+    this.services?.ledger.resetLevelTracking();
     this.services?.clock.clear();
     this.player = undefined;
     this.bow = undefined;
     this.shooting = undefined;
     this.projectiles = undefined;
     this.shotFeedback = undefined;
+    this.coins = undefined;
+    this.coinIncome = undefined;
     this.target = undefined;
     this.level = undefined;
     this.spaceKey = undefined;

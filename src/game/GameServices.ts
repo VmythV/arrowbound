@@ -1,5 +1,6 @@
 import { GameEventBus } from "./events/GameEventBus";
 import { StateController } from "./state/StateController";
+import { CoinLedger } from "./systems/CoinLedger";
 import { GameClock } from "./systems/GameClock";
 import { RandomService } from "./utils/random";
 
@@ -10,15 +11,18 @@ export type GameServices = {
   readonly state: StateController;
   readonly clock: GameClock;
   readonly random: RandomService;
+  readonly ledger: CoinLedger;
 };
 
 export function createGameServices(): GameServices {
   const events = new GameEventBus();
+  const state = new StateController(events);
   return {
     events,
-    state: new StateController(events),
+    state,
     clock: new GameClock(),
     random: new RandomService(),
+    ledger: new CoinLedger(events, state),
   };
 }
 
