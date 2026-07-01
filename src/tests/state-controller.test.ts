@@ -42,4 +42,23 @@ describe("StateController", () => {
     expect(() => controller.openModal("shop")).toThrow("already open");
     expect(() => controller.transitionTo("challenge")).toThrow("while a modal is open");
   });
+
+  it("starts shot cooldown atomically and only advances it while gameplay is active", () => {
+    const controller = new StateController(createEventSink());
+    controller.transitionTo("playing");
+
+    expect(controller.tryStartShotCooldown(1.2)).toBe(true);
+    expect(controller.tryStartShotCooldown(1.2)).toBe(false);
+    controller.advanceShotCooldown(0.4);
+    expect(controller.snapshot.shootCooldownLeft).toBeCloseTo(0.8, 10);
+
+    controller.setVisibilityPaused(true);
+    controller.advanceShotCooldown(10);
+    expect(controller.snapshot.shootCooldownLeft).toBeCloseTo(0.8, 10);
+
+    controller.setVisibilityPaused(false);
+    controller.advanceShotCooldown(0.8);
+    expect(controller.snapshot.shootCooldownLeft).toBe(0);
+    expect(controller.snapshot.canShoot).toBe(true);
+  });
 });

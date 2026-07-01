@@ -41,15 +41,27 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.services.events.on("game:ready", this.handleGameReady, this);
+    this.services.events.on("shot:fired", this.handleShotFired, this);
+    this.services.events.on("arrow:resolved", this.handleArrowResolved, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
   }
 
   private handleGameReady(): void {
-    this.statusText?.setText("基础靶场已就绪，下一阶段接入射箭操作");
+    this.statusText?.setText("点击靶场或按空格键射箭");
+  }
+
+  private handleShotFired(): void {
+    this.statusText?.setText("箭矢已射出");
+  }
+
+  private handleArrowResolved({ hit }: { hit: boolean }): void {
+    this.statusText?.setText(hit ? "命中靶面" : "脱靶");
   }
 
   private handleShutdown(): void {
     this.services?.events.off("game:ready", this.handleGameReady, this);
+    this.services?.events.off("shot:fired", this.handleShotFired, this);
+    this.services?.events.off("arrow:resolved", this.handleArrowResolved, this);
     this.services = undefined;
     this.statusText = undefined;
   }

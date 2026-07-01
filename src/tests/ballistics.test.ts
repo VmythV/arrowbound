@@ -63,3 +63,14 @@ describe("continuous target-plane crossing", () => {
     expect(findVerticalPlaneCrossing({ x: 860, y: 400 }, { x: 840, y: 390 }, 850)).toBeNull();
   });
 });
+
+describe("ballistic trajectory", () => {
+  it("produces the same position for the same angle and elapsed time", () => {
+    const velocity = velocityFromAngle(-24, 900);
+    const direct = positionAtTime(ARROW_SPAWN_POSITION, velocity, 600, 0.75);
+    const repeated = positionAtTime(ARROW_SPAWN_POSITION, velocity, 600, 0.25 + 0.5);
+
+    expect(repeated.x).toBeCloseTo(direct.x, 10);
+    expect(repeated.y).toBeCloseTo(direct.y, 10);
+  });
+});

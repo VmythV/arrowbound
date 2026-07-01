@@ -86,6 +86,33 @@ export class StateController {
     this.emitStateChanged();
   }
 
+  tryStartShotCooldown(durationSeconds: number): boolean {
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+      throw new RangeError("Shot cooldown must be finite and positive");
+    }
+    if (!this.state.canShoot) {
+      return false;
+    }
+
+    this.state.shootCooldownLeft = durationSeconds;
+    this.syncDerivedState();
+    this.emitStateChanged();
+    return true;
+  }
+
+  advanceShotCooldown(deltaSeconds: number): void {
+    if (!Number.isFinite(deltaSeconds) || deltaSeconds < 0) {
+      throw new RangeError("Shot cooldown delta must be finite and non-negative");
+    }
+    if (this.state.isGameplayPaused || this.state.shootCooldownLeft <= 0 || deltaSeconds === 0) {
+      return;
+    }
+
+    this.state.shootCooldownLeft = Math.max(0, this.state.shootCooldownLeft - deltaSeconds);
+    this.syncDerivedState();
+    this.emitStateChanged();
+  }
+
   private syncDerivedState(): void {
     const reasons = [...this.pauseReasons];
     const phasePauseReason =
