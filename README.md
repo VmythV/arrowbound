@@ -6,7 +6,7 @@ arrowbound 是一款面向桌面浏览器的横版 2D 射箭增量 Roguelite 游
 
 ## 当前状态
 
-项目已完成首版 MVP 的阶段 0 工程骨架，当前准备进入核心射箭手感实现。
+项目已完成首版 MVP 的阶段 0 工程骨架和阶段 1 核心射箭手感，当前进入靶子与环数判定实现。
 
 - 产品范围和核心循环已确定
 - 首版 10 关数值配置已确定
@@ -70,6 +70,35 @@ npm run check
 ```
 
 该命令依次执行严格类型检查、单元测试、全仓库 emoji 扫描和生产构建。
+
+涉及场景、画布缩放、素材加载、输入或动效的改动还应运行浏览器验证：
+
+```bash
+npm run check:browser
+```
+
+该命令自动在 `127.0.0.1:4173` 启动临时 Vite 服务，验证两种桌面视口的画布尺寸、SVG 加载链和浏览器错误，并把结果写入 `/tmp/arrowbound-browser-check/summary.json`。
+
+视觉验收时显式生成画布和射击动效截图：
+
+```bash
+npm run check:browser -- --interaction-screenshots
+```
+
+截图包括射击标准姿态、释放、冷却双击和复位状态，需要人工查看，不能只根据脚本退出码判断动效观感。
+
+浏览器验证要求 Python 3、Python `playwright` 包及本机 Chrome 或 Chromium。可使用以下环境变量覆盖默认路径：
+
+```bash
+ARROWBOUND_CHROME_PATH=/path/to/chrome npm run check:browser
+ARROWBOUND_BROWSER_OUTPUT=/tmp/custom-output npm run check:browser
+```
+
+验证已经运行的开发服务器：
+
+```bash
+python3 scripts/check-browser.py --url http://127.0.0.1:5173/
+```
 
 项目包含 Phaser 官方项目级技能，位于 `.agents/skills/`。开发 Phaser 功能时应加载对应技能，并优先采用 Phaser 4.x API。
 

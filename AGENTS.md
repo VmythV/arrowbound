@@ -98,6 +98,19 @@ For each implementation unit:
 
 Do not mark a checkbox complete based only on the presence of code.
 
+### Reusable verification commands
+
+- Run `npm run check` after every implementation unit. It executes strict type checking, unit tests, the repository emoji scan, and the production build.
+- Run `git diff --check` before handoff or commit.
+- Verify visual asset extensions with `find public/assets/svg -type f ! -name '*.svg' ! -name '.gitkeep' -print`; any output must be investigated.
+- Run `npm run check:browser` after changes to Phaser scenes, rendering, asset loading, scaling, input, animation, or other browser-visible behavior. Logic-only changes do not require it unless their acceptance criteria depend on browser behavior.
+
+`npm run check:browser` starts an isolated Vite server on `127.0.0.1:4173`, checks the 1280 × 720 logical canvas at 1600 × 900 and 1024 × 768 viewports, verifies required Boot/Preload SVG requests, fails on browser console or page errors, and writes `summary.json` to `/tmp/arrowbound-browser-check/`. For visual acceptance, run `npm run check:browser -- --interaction-screenshots`; this additionally captures layout plus shooting rest, release, cooldown, and reset screenshots.
+
+Browser-check prerequisites are Python 3, the Python `playwright` package, and a local Chrome or Chromium executable. Override browser discovery with `ARROWBOUND_CHROME_PATH` and the output directory with `ARROWBOUND_BROWSER_OUTPUT`. To test an already-running server, use `python3 scripts/check-browser.py --url http://127.0.0.1:5173/`.
+
+Review the generated interaction screenshots whenever visual acceptance matters; the automated checks cannot infer whether an animation looks correct. Screenshot capture is opt-in because headless WebGL capture is slower than the default assertions. In sandboxed agent environments, request browser-launch approval instead of skipping browser verification. Do not mark a visual TODO complete when browser verification could not be run. Avoid `--disable-gpu`: it has caused headless Phaser startup hangs. The script uses separate pages for timing snapshots because repeated captures from one long-running headless WebGL page can contain compositor artifacts.
+
 ## Testing priorities
 
 At minimum, cover:
