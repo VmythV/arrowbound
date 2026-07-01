@@ -40,7 +40,7 @@ Accounts, cloud saves, leaderboards, mobile support, offline income, 3D chests, 
 
 ## Project Phaser skills
 
-The official Phaser skills are checked into `.agents/skills/` and are part of this repository.
+The official Phaser skills are checked into `.agents/skills/` and are part of this repository. This is the single source of truth. For Claude Code discovery, `.claude/skills/` contains one symlink per skill pointing back to `.agents/skills/<name>`; both tools load the same files. Do not delete those symlinks, and add a matching one when importing a new upstream skill.
 
 - Before implementing a Phaser system, load the smallest relevant official skill or skills from `.agents/skills/`.
 - Use `v4-new-features` for Phaser 4-specific APIs and behavior.

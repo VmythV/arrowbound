@@ -73,6 +73,8 @@ npm run check
 
 项目包含 Phaser 官方项目级技能，位于 `.agents/skills/`。开发 Phaser 功能时应加载对应技能，并优先采用 Phaser 4.x API。
 
+技能对 Codex 与 Claude Code 双向可用：`.agents/skills/` 为唯一真实来源（Codex 经 `AGENTS.md` 读取），`.claude/skills/` 下每个技能是指向 `../../.agents/skills/<name>` 的符号链接，供 Claude Code 自动发现。新增上游技能时同步补一个符号链接。
+
 技能来源：[phaserjs/phaser/skills](https://github.com/phaserjs/phaser/tree/master/skills)，当前导入版本为上游提交 `539e718ef0c19ddb0777645f2a470eccc8715691`。
 
 首版只适配桌面网页。账号、云存档、排行榜、移动端和 3D 宝箱不属于当前 MVP。
