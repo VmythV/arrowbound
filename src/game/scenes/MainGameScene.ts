@@ -15,6 +15,7 @@ import { LEVEL_CONFIGS, type LevelConfig } from "../config/level.config";
 import { Bow } from "../entities/Bow";
 import { Player } from "../entities/Player";
 import { ProjectileSystem, type ProjectileResolution } from "../systems/ProjectileSystem";
+import type { RingScoringConfig } from "../systems/ring-scoring";
 import { ShotFeedbackSystem } from "../systems/ShotFeedbackSystem";
 import { ShootingSystem } from "../systems/ShootingSystem";
 
@@ -27,6 +28,7 @@ export class MainGameScene extends Phaser.Scene {
   private shooting: ShootingSystem | undefined;
   private projectiles: ProjectileSystem | undefined;
   private shotFeedback: ShotFeedbackSystem | undefined;
+  private target: Phaser.GameObjects.Image | undefined;
   private level: LevelConfig | undefined;
   private spaceKey: Phaser.Input.Keyboard.Key | undefined;
 
@@ -71,9 +73,11 @@ export class MainGameScene extends Phaser.Scene {
     const target = this.add
       .image(level.target.x + 28, level.target.y, ASSET_KEYS.targetBasic)
       .setOrigin(0.5, 90 / 220);
+    this.target = target;
+    const scoring = this.buildRingScoring(level);
     this.projectiles = new ProjectileSystem(this, {
       texture: ASSET_KEYS.arrowBasic,
-      target: level.target,
+      target: { x: level.target.x, y: level.target.y, scoring },
       bounds: {
         left: -160,
         right: GAME_WIDTH + 160,
@@ -84,7 +88,7 @@ export class MainGameScene extends Phaser.Scene {
     });
     this.shotFeedback = new ShotFeedbackSystem(
       this,
-      ASSET_KEYS.missDust,
+      { missDust: ASSET_KEYS.missDust, hitSpark: ASSET_KEYS.hitSpark },
       GROUND_Y,
       GAME_WIDTH,
     );
@@ -143,10 +147,24 @@ export class MainGameScene extends Phaser.Scene {
     }
   }
 
+  private buildRingScoring(level: LevelConfig): RingScoringConfig {
+    // 商店等级与祝福倍率由后续阶段接入，当前使用无加成的基础值。
+    return {
+      baseTargetRadius: level.target.radius,
+      centerRingRatio: level.target.centerRingRatio,
+      preciseAimLevel: 0,
+      centerBlessingMultiplier: 1,
+      wideTargetMultiplier: 1,
+    };
+  }
+
   private handleIntroComplete(): void {
     const services = this.services;
     if (services === undefined) {
       return;
+    }
+    if (this.target !== undefined) {
+      this.shotFeedback?.attachTarget(this.target);
     }
     services.state.transitionTo("playing");
     services.events.emit("game:ready", { levelId: services.state.snapshot.currentLevelId });
@@ -183,7 +201,9 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private readonly handleProjectileResolved = (resolution: ProjectileResolution): void => {
-    if (!resolution.hit) {
+    if (resolution.hit) {
+      this.shotFeedback?.showHit(resolution.point, resolution.ring, resolution.runtimeData.source);
+    } else {
       this.shotFeedback?.showMiss(resolution.point);
     }
     this.services?.events.emit("arrow:resolved", resolution);
@@ -200,6 +220,7 @@ export class MainGameScene extends Phaser.Scene {
     this.shooting = undefined;
     this.projectiles = undefined;
     this.shotFeedback = undefined;
+    this.target = undefined;
     this.level = undefined;
     this.spaceKey = undefined;
     this.services = undefined;

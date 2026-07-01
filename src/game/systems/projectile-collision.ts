@@ -1,4 +1,5 @@
 import { findVerticalPlaneCrossing, type Point } from "../utils/ballistics";
+import { resolveRing, type RingScoringConfig } from "./ring-scoring";
 
 export type ProjectileBounds = {
   readonly left: number;
@@ -10,11 +11,12 @@ export type ProjectileBounds = {
 export type ProjectileTarget = {
   readonly x: number;
   readonly y: number;
-  readonly radius: number;
+  readonly scoring: RingScoringConfig;
 };
 
 export type TargetPlaneResolution = {
   readonly hit: boolean;
+  readonly ring: number;
   readonly point: Point;
 };
 
@@ -27,8 +29,10 @@ export function detectTargetPlaneResolution(
   if (crossing === null) {
     return null;
   }
+  const { hit, ring } = resolveRing(Math.abs(crossing.y - target.y), target.scoring);
   return {
-    hit: Math.abs(crossing.y - target.y) <= target.radius,
+    hit,
+    ring,
     point: { x: crossing.x, y: crossing.y },
   };
 }

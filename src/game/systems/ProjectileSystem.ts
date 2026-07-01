@@ -16,6 +16,7 @@ const HIT_HOLD_DURATION_MS = 120;
 
 export type ProjectileResolution = {
   readonly hit: boolean;
+  readonly ring: number;
   readonly point: Point;
   readonly runtimeData: ArrowRuntimeData;
   readonly reason: "target_hit" | "target_miss" | "out_of_bounds";
@@ -85,7 +86,7 @@ export class ProjectileSystem {
         if (targetResolution !== null) {
           arrow.targetPlaneChecked = true;
           if (targetResolution.hit) {
-            this.report(arrow, true, targetResolution.point, "target_hit");
+            this.report(arrow, true, targetResolution.ring, targetResolution.point, "target_hit");
             arrow.holdAt(targetResolution.point, HIT_HOLD_DURATION_MS);
             continue;
           }
@@ -94,7 +95,7 @@ export class ProjectileSystem {
 
       if (isOutsideProjectileBounds(step.currentTip, this.config.bounds)) {
         if (!arrow.outcomeReported) {
-          this.report(arrow, false, step.currentTip, "out_of_bounds");
+          this.report(arrow, false, 0, step.currentTip, "out_of_bounds");
         }
         this.release(arrow);
       }
@@ -126,6 +127,7 @@ export class ProjectileSystem {
   private report(
     arrow: Arrow,
     hit: boolean,
+    ring: number,
     point: Point,
     reason: ProjectileResolution["reason"],
   ): void {
@@ -134,7 +136,7 @@ export class ProjectileSystem {
       throw new Error("Active arrow is missing runtime data");
     }
     arrow.outcomeReported = true;
-    this.config.onResolved({ hit, point, runtimeData: { ...runtimeData }, reason });
+    this.config.onResolved({ hit, ring, point, runtimeData: { ...runtimeData }, reason });
   }
 
   private release(arrow: Arrow): void {

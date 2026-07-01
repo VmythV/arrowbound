@@ -6,20 +6,30 @@ import {
   type ProjectileTarget,
 } from "../game/systems/projectile-collision";
 
-const TARGET: ProjectileTarget = { x: 850, y: 390, radius: 90 };
+const TARGET: ProjectileTarget = {
+  x: 850,
+  y: 390,
+  scoring: {
+    baseTargetRadius: 90,
+    centerRingRatio: 0.12,
+    preciseAimLevel: 0,
+    centerBlessingMultiplier: 1,
+    wideTargetMultiplier: 1,
+  },
+};
 const BOUNDS: ProjectileBounds = { left: -160, right: 1_440, top: -160, bottom: 620 };
 
 describe("ProjectileSystem target-plane resolution", () => {
-  it("records the interpolated impact point and includes the exact target edge", () => {
+  it("records the interpolated impact point and includes the exact target edge as ring 1", () => {
     expect(
       detectTargetPlaneResolution({ x: 840, y: 290 }, { x: 860, y: 310 }, TARGET),
-    ).toEqual({ hit: true, point: { x: 850, y: 300 } });
+    ).toEqual({ hit: true, ring: 1, point: { x: 850, y: 300 } });
   });
 
   it("reports a plane crossing immediately outside the target as a miss", () => {
     expect(
       detectTargetPlaneResolution({ x: 840, y: 289 }, { x: 860, y: 309 }, TARGET),
-    ).toEqual({ hit: false, point: { x: 850, y: 299 } });
+    ).toEqual({ hit: false, ring: 0, point: { x: 850, y: 299 } });
   });
 
   it("does not resolve before the arrow tip crosses the target plane", () => {
