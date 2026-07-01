@@ -4,7 +4,7 @@
 
 `arrowbound` is a desktop-browser 2D archery incremental Roguelite game.
 
-The first release uses Phaser, TypeScript, and Vite with a fixed 1280 × 720 logical canvas. The repository is currently documentation-first; do not invent behavior that conflicts with the design documents.
+The first release uses Phaser 4.x, TypeScript, and Vite with a fixed 1280 × 720 logical canvas. The repository is currently documentation-first; do not invent behavior that conflicts with the design documents.
 
 ## Source of truth
 
@@ -38,9 +38,20 @@ The MVP must include:
 
 Accounts, cloud saves, leaderboards, mobile support, offline income, 3D chests, and a Godot version are outside the MVP.
 
+## Project Phaser skills
+
+The official Phaser skills are checked into `.agents/skills/` and are part of this repository.
+
+- Before implementing a Phaser system, load the smallest relevant official skill or skills from `.agents/skills/`.
+- Use `v4-new-features` for Phaser 4-specific APIs and behavior.
+- Use `v3-to-v4-migration` only when evaluating or adapting a Phaser 3 pattern.
+- Prefer Phaser 4.x APIs. Do not introduce a Phaser 3-only approach when an official Phaser 4 replacement exists.
+- Keep the installed skill files unchanged unless the user explicitly requests an upstream skill update.
+
 ## Engineering rules
 
 - Use TypeScript with strict type checking.
+- Use Phaser 4.x and pin the installed major version to 4.
 - Keep gameplay logic out of Phaser scene classes where practical. Scenes coordinate rendering and input; systems own rules.
 - Keep levels, shop items, blessings, robots, pets, and challenges configuration-driven.
 - Do not hard-code documented balance values inside system logic.

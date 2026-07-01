@@ -45,10 +45,14 @@ arrowbound 是一款面向桌面浏览器的横版 2D 射箭增量 Roguelite 游
 
 ## 技术栈
 
-- Phaser
+- Phaser 4.x
 - TypeScript
 - Vite
 - localStorage
+
+项目包含 Phaser 官方项目级技能，位于 `.agents/skills/`。开发 Phaser 功能时应加载对应技能，并优先采用 Phaser 4.x API。
+
+技能来源：[phaserjs/phaser/skills](https://github.com/phaserjs/phaser/tree/master/skills)，当前导入版本为上游提交 `539e718ef0c19ddb0777645f2a470eccc8715691`。
 
 首版只适配桌面网页。账号、云存档、排行榜、移动端和 3D 宝箱不属于当前 MVP。
 

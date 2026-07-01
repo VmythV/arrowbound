@@ -10,7 +10,7 @@
 - 挑战、机器人和金币宠物能否支撑中期玩法
 - 本地存档能否稳定恢复完整进度
 
-首版技术栈固定为 Phaser + TypeScript + Vite，画布为 1280 × 720 并等比缩放。
+首版技术栈固定为 Phaser 4.x + TypeScript + Vite，画布为 1280 × 720 并等比缩放。
 
 ---
 
@@ -43,6 +43,7 @@
 - [x] 项目和游戏内容禁止使用 emoji
 - [x] 动效按照玩家操作反馈、信息层级和重复游玩节奏完整设计
 - [x] 开发工作优先由 TODOLIST 驱动，完成任务后立即更新状态
+- [x] Phaser 官方技能安装在 `.agents/skills/`，实现时优先使用 Phaser 4.x 对应技能
 
 开发前确认项：
 
@@ -54,7 +55,7 @@
 
 ## 3. 阶段 0：工程与基础架构
 
-- [ ] 初始化 Vite + TypeScript + Phaser 工程
+- [ ] 初始化 Vite + TypeScript + Phaser 4.x 工程
 - [ ] 配置 1280 × 720 画布、桌面端等比缩放和居中显示
 - [ ] 建立 `scenes`、`entities`、`systems`、`config`、`state`、`save`、`utils` 目录
 - [ ] 实现 BootScene、PreloadScene、MainGameScene 和 UIScene
