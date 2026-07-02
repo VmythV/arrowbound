@@ -25,6 +25,12 @@ export type GameEventMap = {
   "blessing:offer": { levelId: number; candidateIds: readonly string[]; usedExtraChoice: boolean };
   "blessing:selected": { levelId: number; blessingId: string };
   "intent:select-blessing": { blessingId: string };
+  "intent:start-challenge": Record<string, never>;
+  "intent:claim-reward": Record<string, never>;
+  "challenge:started": { timeLeft: number; target: number };
+  "challenge:ended": { success: boolean; score: number; target: number };
+  "reward:show": { reward: PendingReward };
+  "reward:done": Record<string, never>;
   "phase:changed": { previous: GamePhase; current: GamePhase; state: Readonly<RuntimeState> };
   "modal:changed": { modal: ModalType; state: Readonly<RuntimeState> };
   "state:changed": { state: Readonly<RuntimeState> };

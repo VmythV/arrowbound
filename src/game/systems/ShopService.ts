@@ -106,6 +106,27 @@ export class ShopService {
     return this.evaluateCondition(this.configFor(itemId).unlockCondition, context);
   }
 
+  /**
+   * 免费升级奖励的候选：已解锁且未满级的商品。
+   */
+  freeUpgradableItems(context: ShopUnlockContext): ShopItemId[] {
+    return SHOP_CONFIGS.filter(
+      (config) => this.isUnlocked(config.id, context) && !this.isMaxed(config.id),
+    ).map((config) => config.id);
+  }
+
+  /**
+   * 免费提升一级（挑战宝箱免费升级奖励）；已满级则不改动，返回新解锁的商品。
+   */
+  grantLevel(itemId: ShopItemId, context: ShopUnlockContext): readonly ShopItemId[] {
+    if (this.isMaxed(itemId)) {
+      return [];
+    }
+    const unlockedBefore = this.unlockedSet(context);
+    this.levels[itemId] += 1;
+    return [...this.unlockedSet(context)].filter((id) => !unlockedBefore.has(id));
+  }
+
   tryPurchase(
     itemId: ShopItemId,
     context: ShopUnlockContext,

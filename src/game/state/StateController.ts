@@ -111,6 +111,40 @@ export class StateController {
     this.emitStateChanged();
   }
 
+  startChallenge(runId: string, durationSeconds: number): void {
+    if (this.state.phase !== "playing") {
+      throw new Error("Challenge can only start from the playing phase");
+    }
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+      throw new RangeError("Challenge duration must be finite and positive");
+    }
+    this.state.challengeRunId = runId;
+    this.state.challengeTimeLeft = durationSeconds;
+    this.state.challengeCoinsCollected = 0;
+    this.transitionTo("challenge");
+  }
+
+  advanceChallengeTime(deltaSeconds: number): number {
+    if (!Number.isFinite(deltaSeconds) || deltaSeconds < 0) {
+      throw new RangeError("Challenge time delta must be finite and non-negative");
+    }
+    if (!this.state.isChallengeActive || this.state.isGameplayPaused || deltaSeconds === 0) {
+      return this.state.challengeTimeLeft;
+    }
+    this.state.challengeTimeLeft = Math.max(0, this.state.challengeTimeLeft - deltaSeconds);
+    this.emitStateChanged();
+    return this.state.challengeTimeLeft;
+  }
+
+  /**
+   * 结束当前挑战运行，清除 runId，使倒计时结束后拾取的金币不再计入挑战。
+   * 相位切换由调用方按成功/失败决定。
+   */
+  endChallengeRun(): void {
+    delete this.state.challengeRunId;
+    this.emitStateChanged();
+  }
+
   addChallengeScore(value: number): void {
     if (!Number.isFinite(value) || value < 0) {
       throw new RangeError("Challenge score increment must be finite and non-negative");

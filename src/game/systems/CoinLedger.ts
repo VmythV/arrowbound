@@ -91,6 +91,21 @@ export class CoinLedger {
   }
 
   /**
+   * 直接向钱包发放奖励金币（宝箱、幸运首箭等），计入累计统计但不经拾取流程。
+   */
+  grantReward(amount: number): void {
+    if (!Number.isInteger(amount) || amount < 0) {
+      throw new RangeError("Reward amount must be a non-negative integer");
+    }
+    if (amount === 0) {
+      return;
+    }
+    this.balance += amount;
+    this.totalEarned += amount;
+    this.events.emit("wallet:changed", { coins: this.balance, delta: amount, reason: "reward" });
+  }
+
+  /**
    * 从钱包扣除金币，余额不足时返回 false 且不改动余额（供普通通关等一次性支出使用）。
    */
   spend(amount: number): boolean {

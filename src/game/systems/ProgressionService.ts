@@ -92,6 +92,33 @@ export class ProgressionService {
     return this.levels.get(levelId)?.normalCleared ?? false;
   }
 
+  isChallengeChestClaimed(levelId: number): boolean {
+    return this.levels.get(levelId)?.challengeChestClaimed ?? false;
+  }
+
+  markChallengeCompleted(levelId: number, chestClaimed: boolean): void {
+    const data = this.levels.get(levelId);
+    if (data === undefined) {
+      throw new Error(`Cannot mark challenge for unknown level ${levelId}`);
+    }
+    data.challengeCompleted = true;
+    if (chestClaimed) {
+      data.challengeChestClaimed = true;
+    }
+  }
+
+  isLuckyFirstTenClaimed(levelId: number): boolean {
+    return this.levels.get(levelId)?.luckyFirstTenRewardClaimed ?? false;
+  }
+
+  markLuckyFirstTenClaimed(levelId: number): void {
+    const data = this.levels.get(levelId);
+    if (data === undefined) {
+      throw new Error(`Cannot mark lucky first ten for unknown level ${levelId}`);
+    }
+    data.luckyFirstTenRewardClaimed = true;
+  }
+
   getSelectedBlessingId(levelId: number): string | undefined {
     return this.levels.get(levelId)?.selectedBlessingId;
   }

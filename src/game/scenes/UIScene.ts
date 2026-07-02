@@ -3,8 +3,10 @@ import { getGameServices, type GameServices } from "../GameServices";
 import { ASSET_KEYS } from "../config/asset-manifest";
 import { COIN_HUD_ANCHOR, GAME_WIDTH, SCENE_KEYS } from "../config/game.constants";
 import type { ShopItemId } from "../config/shop.config";
-import type { ModalType } from "../state/RuntimeState";
+import type { GamePhase, ModalType, RuntimeState } from "../state/RuntimeState";
+import type { PendingReward } from "../state/SaveData";
 import { BlessingOverlay } from "../ui/BlessingOverlay";
+import { RewardOverlay } from "../ui/RewardOverlay";
 import { ShopModal } from "../ui/ShopModal";
 
 const BUTTON_ENABLED_COLOR = "#f8f1dc";
@@ -21,8 +23,13 @@ export class UIScene extends Phaser.Scene {
   private nextButton: Phaser.GameObjects.Text | undefined;
   private shopModal: ShopModal | undefined;
   private blessingOverlay: BlessingOverlay | undefined;
+  private rewardOverlay: RewardOverlay | undefined;
+  private challengeButton: Phaser.GameObjects.Text | undefined;
+  private challengeInfo: Phaser.GameObjects.Text | undefined;
+  private resultBanner: Phaser.GameObjects.Text | undefined;
   private coinCountTween: Phaser.Tweens.Tween | undefined;
   private displayedCoins = 0;
+  private lastChallengeSecond = -1;
 
   constructor() {
     super(SCENE_KEYS.ui);
@@ -77,10 +84,34 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.createButton(110, 682, "商店", "intent:open-shop");
+    this.challengeButton = this.createButton(260, 682, "开始挑战", "intent:start-challenge");
     this.prevButton = this.createButton(GAME_WIDTH - 250, 682, "上一关", "intent:go-previous-level");
     this.nextButton = this.createButton(GAME_WIDTH - 110, 682, "下一关", "intent:go-next-level");
     this.shopModal = new ShopModal(this, this.services);
     this.blessingOverlay = new BlessingOverlay(this, this.services);
+    this.rewardOverlay = new RewardOverlay(this, this.services);
+
+    this.challengeInfo = this.add
+      .text(GAME_WIDTH / 2, 110, "", {
+        color: "#ffe1a0",
+        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        fontSize: "22px",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+      .setVisible(false);
+    this.resultBanner = this.add
+      .text(GAME_WIDTH / 2, 300, "", {
+        color: "#fff1bd",
+        fontFamily: "Georgia, serif",
+        fontSize: "40px",
+        fontStyle: "bold",
+        stroke: "#273842",
+        strokeThickness: 6,
+      })
+      .setOrigin(0.5)
+      .setDepth(900)
+      .setVisible(false);
 
     this.services.events.on("game:ready", this.handleGameReady, this);
     this.services.events.on("shot:fired", this.handleShotFired, this);
@@ -93,6 +124,11 @@ export class UIScene extends Phaser.Scene {
     this.services.events.on("shop:purchase-failed", this.handleShopPurchaseFailed, this);
     this.services.events.on("blessing:offer", this.handleBlessingOffer, this);
     this.services.events.on("blessing:selected", this.handleBlessingSelected, this);
+    this.services.events.on("state:changed", this.handleStateChanged, this);
+    this.services.events.on("challenge:started", this.handleChallengeStarted, this);
+    this.services.events.on("challenge:ended", this.handleChallengeEnded, this);
+    this.services.events.on("reward:show", this.handleRewardShow, this);
+    this.services.events.on("reward:done", this.handleRewardDone, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
 
     this.refreshLevelDisplay();
@@ -133,11 +169,89 @@ export class UIScene extends Phaser.Scene {
     this.blessingOverlay?.hide();
   }
 
+  private handleStateChanged({ state }: { state: Readonly<RuntimeState> }): void {
+    this.updateChallengeButton(state.phase);
+    if (state.isChallengeActive) {
+      const seconds = Math.ceil(state.challengeTimeLeft);
+      const target = this.services?.progression.currentConfig.challengeTargetCoins ?? 0;
+      this.challengeInfo
+        ?.setVisible(true)
+        .setText(`挑战  ${state.challengeCoinsCollected} / ${target}  ·  ${seconds} 秒`)
+        .setColor(seconds <= 10 ? "#ff9d7a" : "#ffe1a0");
+      if (seconds !== this.lastChallengeSecond && seconds <= 10 && this.challengeInfo !== undefined) {
+        this.tweens.add({
+          targets: this.challengeInfo,
+          scale: { from: 1.12, to: 1 },
+          duration: 220,
+          ease: "Quad.Out",
+        });
+      }
+      this.lastChallengeSecond = seconds;
+    } else {
+      this.challengeInfo?.setVisible(false);
+      this.lastChallengeSecond = -1;
+    }
+  }
+
+  private updateChallengeButton(phase: GamePhase): void {
+    const button = this.challengeButton;
+    if (button === undefined) {
+      return;
+    }
+    const enabled = phase === "playing";
+    button.setAlpha(enabled ? 1 : 0.45);
+    if (enabled) {
+      button.setInteractive({ useHandCursor: true });
+    } else {
+      button.disableInteractive();
+      button.setScale(1);
+    }
+  }
+
+  private handleChallengeStarted({ target }: { target: number }): void {
+    this.challengeInfo?.setVisible(true).setText(`挑战  0 / ${target}`);
+  }
+
+  private handleChallengeEnded({ success }: { success: boolean }): void {
+    this.challengeInfo?.setVisible(false);
+    this.showResultBanner(success ? "挑战成功" : "挑战失败", success ? "#a7e8a0" : "#f0c27a");
+  }
+
+  private showResultBanner(text: string, color: string): void {
+    const banner = this.resultBanner;
+    if (banner === undefined) {
+      return;
+    }
+    banner.setText(text).setColor(color).setVisible(true).setAlpha(0).setScale(0.9);
+    this.tweens.add({
+      targets: banner,
+      alpha: { from: 0, to: 1 },
+      scale: { from: 0.9, to: 1 },
+      duration: 220,
+      ease: "Back.Out",
+      hold: 700,
+      yoyo: true,
+      onComplete: () => banner.setVisible(false),
+    });
+  }
+
+  private handleRewardShow({ reward }: { reward: PendingReward }): void {
+    this.rewardOverlay?.show(reward);
+  }
+
+  private handleRewardDone(): void {
+    this.rewardOverlay?.hide();
+  }
+
   private createButton(
     x: number,
     y: number,
     label: string,
-    intent: "intent:go-next-level" | "intent:go-previous-level" | "intent:open-shop",
+    intent:
+      | "intent:go-next-level"
+      | "intent:go-previous-level"
+      | "intent:open-shop"
+      | "intent:start-challenge",
   ): Phaser.GameObjects.Text {
     const button = this.add
       .text(x, y, label, {
@@ -265,12 +379,22 @@ export class UIScene extends Phaser.Scene {
     this.services?.events.off("shop:purchase-failed", this.handleShopPurchaseFailed, this);
     this.services?.events.off("blessing:offer", this.handleBlessingOffer, this);
     this.services?.events.off("blessing:selected", this.handleBlessingSelected, this);
+    this.services?.events.off("state:changed", this.handleStateChanged, this);
+    this.services?.events.off("challenge:started", this.handleChallengeStarted, this);
+    this.services?.events.off("challenge:ended", this.handleChallengeEnded, this);
+    this.services?.events.off("reward:show", this.handleRewardShow, this);
+    this.services?.events.off("reward:done", this.handleRewardDone, this);
     this.coinCountTween?.stop();
     this.coinCountTween = undefined;
     this.shopModal?.destroy();
     this.shopModal = undefined;
     this.blessingOverlay?.destroy();
     this.blessingOverlay = undefined;
+    this.rewardOverlay?.destroy();
+    this.rewardOverlay = undefined;
+    this.challengeButton = undefined;
+    this.challengeInfo = undefined;
+    this.resultBanner = undefined;
     this.coinIcon = undefined;
     this.coinsText = undefined;
     this.levelText = undefined;

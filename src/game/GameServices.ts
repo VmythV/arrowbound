@@ -4,6 +4,7 @@ import { BlessingService } from "./systems/BlessingService";
 import { CoinLedger } from "./systems/CoinLedger";
 import { GameClock } from "./systems/GameClock";
 import { ProgressionService } from "./systems/ProgressionService";
+import { RewardService } from "./systems/RewardService";
 import { ShopService } from "./systems/ShopService";
 import { RandomService } from "./utils/random";
 
@@ -18,6 +19,7 @@ export type GameServices = {
   readonly progression: ProgressionService;
   readonly shop: ShopService;
   readonly blessings: BlessingService;
+  readonly rewards: RewardService;
 };
 
 export function createGameServices(): GameServices {
@@ -33,6 +35,7 @@ export function createGameServices(): GameServices {
     progression: new ProgressionService(),
     shop: new ShopService(),
     blessings: new BlessingService(random),
+    rewards: new RewardService(random, events),
   };
 }
 

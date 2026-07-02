@@ -3,6 +3,7 @@ import { getGameServices, type GameServices } from "../GameServices";
 import { ASSET_KEYS } from "../config/asset-manifest";
 import {
   ARROW_SPAWN_POSITION,
+  CHALLENGE_DURATION_SECONDS,
   COIN_HUD_ANCHOR,
   GAME_HEIGHT,
   GAME_WIDTH,
@@ -13,6 +14,7 @@ import {
   PLAYER_POSITION,
   SCENE_KEYS,
 } from "../config/game.constants";
+import type { PendingReward } from "../state/SaveData";
 import { type LevelConfig } from "../config/level.config";
 import type { ShopItemId } from "../config/shop.config";
 import { Bow } from "../entities/Bow";
@@ -125,6 +127,8 @@ export class MainGameScene extends Phaser.Scene {
     this.services.events.on("intent:close-modal", this.handleCloseModal, this);
     this.services.events.on("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
     this.services.events.on("intent:select-blessing", this.handleSelectBlessing, this);
+    this.services.events.on("intent:start-challenge", this.handleStartChallenge, this);
+    this.services.events.on("intent:claim-reward", this.handleClaimReward, this);
     this.services.events.on("shop:changed", this.handleShopChanged, this);
 
     if (!this.scene.isActive(SCENE_KEYS.ui)) {
@@ -173,6 +177,26 @@ export class MainGameScene extends Phaser.Scene {
     bow.setAngle(shooting.update(delta, this.bowSpeedMultiplier));
     if (!isPaused) {
       this.projectiles?.update(delta);
+    }
+    this.updateChallenge(delta);
+  }
+
+  private updateChallenge(deltaMs: number): void {
+    const services = this.services;
+    const level = this.level;
+    if (services === undefined || level === undefined) {
+      return;
+    }
+    const snapshot = services.state.snapshot;
+    if (!snapshot.isChallengeActive) {
+      return;
+    }
+    services.state.advanceChallengeTime(deltaMs / 1_000);
+    const updated = services.state.snapshot;
+    if (updated.challengeCoinsCollected >= level.challengeTargetCoins) {
+      this.finishChallenge(true);
+    } else if (updated.challengeTimeLeft <= 0) {
+      this.finishChallenge(false);
     }
   }
 
@@ -337,6 +361,143 @@ export class MainGameScene extends Phaser.Scene {
     this.transitionToLevel(progression.currentConfig.id - 1);
   };
 
+  private readonly handleStartChallenge = (): void => {
+    const services = this.services;
+    const level = this.level;
+    if (services === undefined || level === undefined) {
+      return;
+    }
+    const snapshot = services.state.snapshot;
+    if (snapshot.phase !== "playing" || snapshot.activeModal !== null) {
+      return;
+    }
+    const runId = `run-${level.id}-${Math.floor(services.random.next() * 1e9).toString(36)}`;
+    services.state.startChallenge(runId, CHALLENGE_DURATION_SECONDS);
+    services.events.emit("challenge:started", {
+      timeLeft: CHALLENGE_DURATION_SECONDS,
+      target: level.challengeTargetCoins,
+    });
+  };
+
+  private finishChallenge(success: boolean): void {
+    const services = this.services;
+    const level = this.level;
+    if (services === undefined || level === undefined) {
+      return;
+    }
+    const score = services.state.snapshot.challengeCoinsCollected;
+    // 结束运行：清 runId 并退出挑战相位，倒计时结束后拾取的金币不再计分。
+    services.state.endChallengeRun();
+    services.events.emit("challenge:ended", { success, score, target: level.challengeTargetCoins });
+
+    if (!success) {
+      // 失败：不扣金币、不改完成状态，返回游玩。
+      services.state.transitionTo("playing");
+      return;
+    }
+
+    const firstChest = !services.progression.isChallengeChestClaimed(level.id);
+    services.progression.markChallengeCompleted(level.id, false);
+    if (!firstChest) {
+      // 重复挑战成功：不再生成宝箱，直接返回游玩。
+      services.state.transitionTo("playing");
+      return;
+    }
+
+    const reward = services.rewards.drawChallengeReward({
+      levelId: level.id,
+      clearCoinGoal: level.clearCoinGoal,
+      freeUpgradeItems: services.shop.freeUpgradableItems({
+        isNormalCleared: (id) => services.progression.isNormalCleared(id),
+      }),
+    });
+    services.rewards.enqueue(reward);
+    this.beginRewardPhase();
+  }
+
+  private beginRewardPhase(): void {
+    const services = this.services;
+    if (services === undefined) {
+      return;
+    }
+    const reward = services.rewards.next;
+    if (reward === undefined) {
+      if (services.state.snapshot.phase === "reward") {
+        services.state.transitionTo("playing");
+      }
+      services.events.emit("reward:done", {});
+      return;
+    }
+    if (services.state.snapshot.phase !== "reward") {
+      services.state.transitionTo("reward");
+    }
+    services.events.emit("reward:show", { reward });
+  }
+
+  private readonly handleClaimReward = (): void => {
+    const services = this.services;
+    if (services === undefined || services.state.snapshot.phase !== "reward") {
+      return;
+    }
+    const claimed = services.rewards.claimNext((reward) => this.grantReward(reward));
+    if (claimed !== undefined) {
+      if (claimed.source === "challenge") {
+        services.progression.markChallengeCompleted(claimed.levelId, true);
+      } else if (claimed.source === "lucky_first_ten") {
+        services.progression.markLuckyFirstTenClaimed(claimed.levelId);
+      }
+    }
+    this.beginRewardPhase();
+  };
+
+  private grantReward(reward: PendingReward): void {
+    const services = this.services;
+    if (services === undefined) {
+      return;
+    }
+    switch (reward.type) {
+      case "coins":
+        services.ledger.grantReward(reward.amount ?? 0);
+        break;
+      case "shop_level":
+        if (reward.shopItemId !== undefined) {
+          services.shop.grantLevel(reward.shopItemId, {
+            isNormalCleared: (id) => services.progression.isNormalCleared(id),
+          });
+          this.applyModifiers();
+          services.events.emit("shop:changed", {});
+        }
+        break;
+      case "extra_blessing_choice":
+        services.blessings.grantExtraChoice();
+        break;
+    }
+  }
+
+  private maybeTriggerLuckyFirstTen(resolution: ProjectileResolution): void {
+    const services = this.services;
+    const level = this.level;
+    if (services === undefined || level === undefined) {
+      return;
+    }
+    if (resolution.ring !== 10 || resolution.runtimeData.source !== "player") {
+      return;
+    }
+    // 仅在游玩相位触发，避免中断挑战；需本关选择幸运首箭祝福且未领取过。
+    if (services.state.snapshot.phase !== "playing") {
+      return;
+    }
+    if (!this.currentBlessingEffects(level).luckyFirstTen) {
+      return;
+    }
+    if (services.progression.isLuckyFirstTenClaimed(level.id)) {
+      return;
+    }
+    const reward = services.rewards.drawLuckyFirstTen(level.id, level.clearCoinGoal);
+    services.rewards.enqueue(reward);
+    this.beginRewardPhase();
+  }
+
   private readonly handleOpenShop = (): void => {
     const services = this.services;
     if (services === undefined) {
@@ -426,6 +587,9 @@ export class MainGameScene extends Phaser.Scene {
       this.shotFeedback?.showMiss(resolution.point);
     }
     this.services?.events.emit("arrow:resolved", resolution);
+    if (resolution.hit) {
+      this.maybeTriggerLuckyFirstTen(resolution);
+    }
   };
 
   private spawnCoinForHit(resolution: ProjectileResolution): void {
@@ -457,6 +621,8 @@ export class MainGameScene extends Phaser.Scene {
     this.services?.events.off("intent:close-modal", this.handleCloseModal, this);
     this.services?.events.off("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
     this.services?.events.off("intent:select-blessing", this.handleSelectBlessing, this);
+    this.services?.events.off("intent:start-challenge", this.handleStartChallenge, this);
+    this.services?.events.off("intent:claim-reward", this.handleClaimReward, this);
     this.services?.events.off("shop:changed", this.handleShopChanged, this);
     this.shotFeedback?.destroy();
     this.projectiles?.destroy();
