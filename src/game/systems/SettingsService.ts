@@ -35,8 +35,37 @@ export class SettingsService {
     return this.mutedFlag;
   }
 
+  get master(): number {
+    return this.masterVolume;
+  }
+
+  get music(): number {
+    return this.musicVolume;
+  }
+
+  get sfx(): number {
+    return this.sfxVolume;
+  }
+
+  /** 音效实际输出增益：静音时为 0，否则为总音量 × 音效音量。 */
+  get effectiveSfxGain(): number {
+    return this.mutedFlag ? 0 : this.masterVolume * this.sfxVolume;
+  }
+
   setMuted(muted: boolean): void {
     this.mutedFlag = muted;
+  }
+
+  setMaster(value: number): void {
+    this.masterVolume = clampVolume(value, this.masterVolume);
+  }
+
+  setMusic(value: number): void {
+    this.musicVolume = clampVolume(value, this.musicVolume);
+  }
+
+  setSfx(value: number): void {
+    this.sfxVolume = clampVolume(value, this.sfxVolume);
   }
 
   toSaveData(): SettingsSaveData {

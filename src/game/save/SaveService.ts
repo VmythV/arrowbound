@@ -43,6 +43,7 @@ export class SaveService {
     events.on("reward:done", this.saveNow, this);
     events.on("challenge:ended", this.saveNow, this);
     events.on("level:changed", this.saveNow, this);
+    events.on("settings:changed", this.saveNow, this);
   }
 
   buildSnapshot(): SaveData {
@@ -95,6 +96,7 @@ export class SaveService {
     events.off("reward:done", this.saveNow, this);
     events.off("challenge:ended", this.saveNow, this);
     events.off("level:changed", this.saveNow, this);
+    events.off("settings:changed", this.saveNow, this);
   }
 
   private handleWalletChanged({ reason }: { reason: string }): void {

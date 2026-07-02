@@ -19,6 +19,9 @@ export type GameEventMap = {
   "intent:open-shop": Record<string, never>;
   "intent:open-settings": Record<string, never>;
   "intent:reset-save": Record<string, never>;
+  "intent:adjust-volume": { channel: "master" | "music" | "sfx"; delta: number };
+  "intent:toggle-mute": Record<string, never>;
+  "settings:changed": Record<string, never>;
   "intent:close-modal": Record<string, never>;
   "intent:purchase-shop-item": { itemId: ShopItemId };
   "shop:changed": Record<string, never>;

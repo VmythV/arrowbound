@@ -157,6 +157,8 @@ export class MainGameScene extends Phaser.Scene {
     this.services.events.on("intent:open-shop", this.handleOpenShop, this);
     this.services.events.on("intent:open-settings", this.handleOpenSettings, this);
     this.services.events.on("intent:reset-save", this.handleResetSave, this);
+    this.services.events.on("intent:adjust-volume", this.handleAdjustVolume, this);
+    this.services.events.on("intent:toggle-mute", this.handleToggleMute, this);
     this.services.events.on("intent:close-modal", this.handleCloseModal, this);
     this.services.events.on("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
     this.services.events.on("intent:select-blessing", this.handleSelectBlessing, this);
@@ -574,6 +576,36 @@ export class MainGameScene extends Phaser.Scene {
     globalThis.location.reload();
   };
 
+  private readonly handleAdjustVolume = ({
+    channel,
+    delta,
+  }: {
+    channel: "master" | "music" | "sfx";
+    delta: number;
+  }): void => {
+    const settings = this.services?.settings;
+    if (settings === undefined) {
+      return;
+    }
+    if (channel === "master") {
+      settings.setMaster(settings.master + delta);
+    } else if (channel === "music") {
+      settings.setMusic(settings.music + delta);
+    } else {
+      settings.setSfx(settings.sfx + delta);
+    }
+    this.services?.events.emit("settings:changed", {});
+  };
+
+  private readonly handleToggleMute = (): void => {
+    const settings = this.services?.settings;
+    if (settings === undefined) {
+      return;
+    }
+    settings.setMuted(!settings.muted);
+    this.services?.events.emit("settings:changed", {});
+  };
+
   private readonly handlePurchaseShopItem = ({ itemId }: { itemId: ShopItemId }): void => {
     const services = this.services;
     if (services === undefined || services.state.snapshot.activeModal !== "shop") {
@@ -680,6 +712,8 @@ export class MainGameScene extends Phaser.Scene {
     this.services?.events.off("intent:open-shop", this.handleOpenShop, this);
     this.services?.events.off("intent:open-settings", this.handleOpenSettings, this);
     this.services?.events.off("intent:reset-save", this.handleResetSave, this);
+    this.services?.events.off("intent:adjust-volume", this.handleAdjustVolume, this);
+    this.services?.events.off("intent:toggle-mute", this.handleToggleMute, this);
     this.services?.events.off("intent:close-modal", this.handleCloseModal, this);
     this.services?.events.off("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
     this.services?.events.off("intent:select-blessing", this.handleSelectBlessing, this);

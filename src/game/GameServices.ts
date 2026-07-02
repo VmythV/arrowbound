@@ -4,6 +4,7 @@ import type { SaveRepository } from "./save/SaveRepository";
 import { SaveService } from "./save/SaveService";
 import { createDefaultSaveData, type SaveData } from "./state/SaveData";
 import { StateController } from "./state/StateController";
+import { AudioService } from "./systems/AudioService";
 import { BlessingService } from "./systems/BlessingService";
 import { CoinLedger } from "./systems/CoinLedger";
 import { GameClock } from "./systems/GameClock";
@@ -28,6 +29,7 @@ export type GameServices = {
   readonly rewards: RewardService;
   readonly settings: SettingsService;
   readonly stats: StatsService;
+  readonly audio: AudioService;
   readonly repository: SaveRepository;
   readonly saveService: SaveService;
 };
@@ -52,6 +54,7 @@ export function createGameServices(
   const rewards = new RewardService(random, events, initialSave.rewards.pendingRewards);
   const settings = new SettingsService(initialSave.settings);
   const stats = new StatsService(events, initialSave.stats);
+  const audio = new AudioService(events, settings);
   const saveService = new SaveService({
     events,
     clock,
@@ -77,6 +80,7 @@ export function createGameServices(
     rewards,
     settings,
     stats,
+    audio,
     repository,
     saveService,
   };

@@ -6,14 +6,24 @@ import type { GameServices } from "../GameServices";
 const PANEL_X = GAME_WIDTH / 2;
 const PANEL_Y = 330;
 const BODY_FONT = 'Inter, "Noto Sans SC", sans-serif';
+const VOLUME_STEP = 0.1;
+
+type VolumeChannel = "master" | "music" | "sfx";
+
+type VolumeRow = {
+  readonly channel: VolumeChannel;
+  readonly value: Phaser.GameObjects.Text;
+};
 
 /**
- * 设置弹窗。首版仅提供暂停容器与关闭；音量、音效与清除存档在阶段 11、12 补入。
- * 打开时通过 StateController 暂停主游戏，关闭后恢复。
+ * 设置弹窗：总音量、音乐、音效的加减调节与静音开关，以及清除存档并重新开始。
+ * 打开时通过 StateController 暂停主游戏；控件只发意图，由 MainGameScene 应用并保存。
  */
 export class SettingsModal {
   private readonly scrim: Phaser.GameObjects.Image;
   private readonly container: Phaser.GameObjects.Container;
+  private readonly rows: VolumeRow[] = [];
+  private readonly muteButton: Phaser.GameObjects.Text;
   private openTween: Phaser.Tweens.Tween | undefined;
   private visible = false;
 
@@ -37,42 +47,22 @@ export class SettingsModal {
         fontStyle: "bold",
       })
       .setOrigin(0.5);
-    const hint = scene.add
-      .text(PANEL_X, PANEL_Y - 60, "游戏已暂停", {
-        color: "#d7e0e6",
-        fontFamily: BODY_FONT,
-        fontSize: "20px",
-      })
-      .setOrigin(0.5);
-    const resetButton = scene.add
-      .text(PANEL_X, PANEL_Y + 40, "清除存档并重新开始", {
-        color: "#f3d7cf",
-        fontFamily: BODY_FONT,
-        fontSize: "20px",
-        fontStyle: "bold",
-        backgroundColor: "#7a3b35",
-        padding: { x: 20, y: 10 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
-    resetButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
-      this.services.events.emit("intent:reset-save", {});
-    });
-    const closeButton = scene.add
-      .text(1050, PANEL_Y - 278, "关闭", {
-        color: "#f8f1dc",
-        fontFamily: BODY_FONT,
-        fontSize: "18px",
-        fontStyle: "bold",
-        backgroundColor: "#3a4d58",
-        padding: { x: 12, y: 6 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
-    closeButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+    const closeButton = this.textButton(1050, PANEL_Y - 278, "关闭", "#3a4d58", () => {
       this.services.events.emit("intent:close-modal", {});
     });
-    this.container.add([panel, title, hint, resetButton, closeButton]);
+    this.container.add([panel, title, closeButton]);
+
+    this.rows.push(this.buildVolumeRow("master", "总音量", 170));
+    this.rows.push(this.buildVolumeRow("music", "音乐", 236));
+    this.rows.push(this.buildVolumeRow("sfx", "音效", 302));
+
+    this.muteButton = this.textButton(PANEL_X, 380, "", "#3a4d58", () => {
+      this.services.events.emit("intent:toggle-mute", {});
+    });
+    const resetButton = this.textButton(PANEL_X, 470, "清除存档并重新开始", "#7a3b35", () => {
+      this.services.events.emit("intent:reset-save", {});
+    });
+    this.container.add([this.muteButton, resetButton]);
   }
 
   get isOpen(): boolean {
@@ -81,6 +71,7 @@ export class SettingsModal {
 
   open(): void {
     this.visible = true;
+    this.refresh();
     this.openTween?.stop();
     this.scrim.setVisible(true);
     this.container.setVisible(true).setAlpha(0).setY(18);
@@ -114,9 +105,73 @@ export class SettingsModal {
     });
   }
 
+  refresh(): void {
+    const settings = this.services.settings;
+    for (const row of this.rows) {
+      row.value.setText(`${Math.round(this.channelValue(row.channel) * 100)}%`);
+    }
+    this.muteButton.setText(settings.muted ? "静音：开" : "静音：关");
+  }
+
   destroy(): void {
     this.openTween?.stop();
     this.scrim.destroy();
     this.container.destroy(true);
+    this.rows.length = 0;
+  }
+
+  private channelValue(channel: VolumeChannel): number {
+    const settings = this.services.settings;
+    if (channel === "master") return settings.master;
+    if (channel === "music") return settings.music;
+    return settings.sfx;
+  }
+
+  private buildVolumeRow(channel: VolumeChannel, label: string, y: number): VolumeRow {
+    const labelText = this.scene.add
+      .text(240, y, label, {
+        color: "#e8ddc3",
+        fontFamily: BODY_FONT,
+        fontSize: "20px",
+      })
+      .setOrigin(0, 0.5);
+    const minus = this.textButton(560, y, "-", "#3a4d58", () => {
+      this.services.events.emit("intent:adjust-volume", { channel, delta: -VOLUME_STEP });
+    });
+    const value = this.scene.add
+      .text(660, y, "", {
+        color: "#ffe9a0",
+        fontFamily: BODY_FONT,
+        fontSize: "20px",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    const plus = this.textButton(760, y, "+", "#3a4d58", () => {
+      this.services.events.emit("intent:adjust-volume", { channel, delta: VOLUME_STEP });
+    });
+    this.container.add([labelText, minus, value, plus]);
+    return { channel, value };
+  }
+
+  private textButton(
+    x: number,
+    y: number,
+    label: string,
+    background: string,
+    onClick: () => void,
+  ): Phaser.GameObjects.Text {
+    const button = this.scene.add
+      .text(x, y, label, {
+        color: "#f8f1dc",
+        fontFamily: BODY_FONT,
+        fontSize: "20px",
+        fontStyle: "bold",
+        backgroundColor: background,
+        padding: { x: 14, y: 6 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    button.on(Phaser.Input.Events.POINTER_DOWN, onClick);
+    return button;
   }
 }

@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 import { getGameServices, type GameServices } from "../GameServices";
 import { ASSET_KEYS } from "../config/asset-manifest";
 import { COIN_HUD_ANCHOR, GAME_WIDTH, SCENE_KEYS } from "../config/game.constants";
+import { BLESSING_CONFIGS } from "../config/blessing.config";
 import type { ShopItemId } from "../config/shop.config";
 import type { GamePhase, ModalType, RuntimeState } from "../state/RuntimeState";
 import type { PendingReward } from "../state/SaveData";
@@ -29,9 +30,13 @@ export class UIScene extends Phaser.Scene {
   private challengeButton: Phaser.GameObjects.Text | undefined;
   private challengeInfo: Phaser.GameObjects.Text | undefined;
   private resultBanner: Phaser.GameObjects.Text | undefined;
+  private blessingInfo: Phaser.GameObjects.Text | undefined;
+  private cooldownFill: Phaser.GameObjects.Image | undefined;
   private coinCountTween: Phaser.Tweens.Tween | undefined;
   private displayedCoins = 0;
   private lastChallengeSecond = -1;
+  private cooldownPeak = 1;
+  private lastCooldownLeft = 0;
 
   constructor() {
     super(SCENE_KEYS.ui);
@@ -75,6 +80,21 @@ export class UIScene extends Phaser.Scene {
         fontFamily: 'Inter, "Noto Sans SC", sans-serif',
         fontSize: "18px",
       })
+      .setOrigin(0, 0.5);
+
+    this.blessingInfo = this.add
+      .text(42, 104, "", {
+        color: "#d8c4f0",
+        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        fontSize: "16px",
+        fontStyle: "bold",
+      })
+      .setOrigin(0, 0.5)
+      .setVisible(false);
+
+    this.add.image(GAME_WIDTH / 2, 636, ASSET_KEYS.cooldownTrack);
+    this.cooldownFill = this.add
+      .image(GAME_WIDTH / 2 - 96, 636, ASSET_KEYS.cooldownFill)
       .setOrigin(0, 0.5);
 
     this.statusText = this.add
@@ -133,6 +153,7 @@ export class UIScene extends Phaser.Scene {
     this.services.events.on("challenge:ended", this.handleChallengeEnded, this);
     this.services.events.on("reward:show", this.handleRewardShow, this);
     this.services.events.on("reward:done", this.handleRewardDone, this);
+    this.services.events.on("settings:changed", this.handleSettingsChanged, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
 
     this.refreshLevelDisplay();
@@ -180,6 +201,7 @@ export class UIScene extends Phaser.Scene {
 
   private handleStateChanged({ state }: { state: Readonly<RuntimeState> }): void {
     this.updateChallengeButton(state.phase);
+    this.updateCooldownBar(state.shootCooldownLeft);
     if (state.isChallengeActive) {
       const seconds = Math.ceil(state.challengeTimeLeft);
       const target = this.services?.progression.currentConfig.challengeTargetCoins ?? 0;
@@ -200,6 +222,22 @@ export class UIScene extends Phaser.Scene {
       this.challengeInfo?.setVisible(false);
       this.lastChallengeSecond = -1;
     }
+  }
+
+  private updateCooldownBar(shootCooldownLeft: number): void {
+    const fill = this.cooldownFill;
+    if (fill === undefined) {
+      return;
+    }
+    // 冷却刚开始（剩余时间跳增）时记录本次峰值，随后线性恢复。
+    if (shootCooldownLeft > this.lastCooldownLeft) {
+      this.cooldownPeak = Math.max(shootCooldownLeft, 0.001);
+    }
+    this.lastCooldownLeft = shootCooldownLeft;
+    const readyFraction =
+      shootCooldownLeft <= 0 ? 1 : 1 - Math.min(1, shootCooldownLeft / this.cooldownPeak);
+    fill.setScale(Math.max(0.001, readyFraction), 1);
+    fill.setTint(readyFraction >= 1 ? 0x8ee49a : 0xd7b96a);
   }
 
   private updateChallengeButton(phase: GamePhase): void {
@@ -250,6 +288,10 @@ export class UIScene extends Phaser.Scene {
 
   private handleRewardDone(): void {
     this.rewardOverlay?.hide();
+  }
+
+  private handleSettingsChanged(): void {
+    this.settingsModal?.refresh();
   }
 
   private createButton(
@@ -324,6 +366,14 @@ export class UIScene extends Phaser.Scene {
     this.nextButton?.setText(cleared ? "下一关" : "确认通关");
     this.setButtonEnabled(this.nextButton, canAdvance);
     this.setButtonEnabled(this.prevButton, progression.hasPreviousLevel());
+
+    const blessingId = progression.getSelectedBlessingId(level.id);
+    const blessingName = BLESSING_CONFIGS.find((config) => config.id === blessingId)?.name;
+    if (blessingName === undefined) {
+      this.blessingInfo?.setVisible(false);
+    } else {
+      this.blessingInfo?.setVisible(true).setText(`本关祝福：${blessingName}`);
+    }
   }
 
   private formatCoins(value: number): string {
@@ -394,6 +444,7 @@ export class UIScene extends Phaser.Scene {
     this.services?.events.off("challenge:ended", this.handleChallengeEnded, this);
     this.services?.events.off("reward:show", this.handleRewardShow, this);
     this.services?.events.off("reward:done", this.handleRewardDone, this);
+    this.services?.events.off("settings:changed", this.handleSettingsChanged, this);
     this.coinCountTween?.stop();
     this.coinCountTween = undefined;
     this.shopModal?.destroy();
@@ -407,6 +458,8 @@ export class UIScene extends Phaser.Scene {
     this.challengeButton = undefined;
     this.challengeInfo = undefined;
     this.resultBanner = undefined;
+    this.blessingInfo = undefined;
+    this.cooldownFill = undefined;
     this.coinIcon = undefined;
     this.coinsText = undefined;
     this.levelText = undefined;
