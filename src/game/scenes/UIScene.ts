@@ -10,9 +10,15 @@ import { BlessingOverlay } from "../ui/BlessingOverlay";
 import { RewardOverlay } from "../ui/RewardOverlay";
 import { SettingsModal } from "../ui/SettingsModal";
 import { ShopModal } from "../ui/ShopModal";
+import { THEME } from "../config/theme";
 
-const BUTTON_ENABLED_COLOR = "#f8f1dc";
-const BUTTON_DISABLED_COLOR = "#7c8b93";
+const TITLE_FONT = THEME.fonts.display;
+const BODY_FONT = THEME.fonts.body;
+const BUTTON_ENABLED_COLOR = THEME.color.title;
+const BUTTON_DISABLED_COLOR = THEME.color.disabled;
+const BUTTON_BG = THEME.color.panelAlt;
+const CTA_BG = THEME.color.ctaA;
+const CTA_TEXT = "#5a2c00";
 
 export class UIScene extends Phaser.Scene {
   private services: GameServices | undefined;
@@ -46,8 +52,8 @@ export class UIScene extends Phaser.Scene {
     this.services = getGameServices(this.registry);
     this.add.image(GAME_WIDTH / 2, 52, ASSET_KEYS.hudPanel);
     this.add.text(42, 29, "ARROWBOUND", {
-      color: "#fff1bd",
-      fontFamily: "Georgia, serif",
+      color: THEME.color.coin,
+      fontFamily: TITLE_FONT,
       fontSize: "24px",
       fontStyle: "bold",
       letterSpacing: 2,
@@ -55,8 +61,8 @@ export class UIScene extends Phaser.Scene {
 
     this.levelText = this.add
       .text(GAME_WIDTH - 42, 31, "", {
-        color: "#f8f1dc",
-        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        color: THEME.color.title,
+        fontFamily: BODY_FONT,
         fontSize: "20px",
       })
       .setOrigin(1, 0);
@@ -67,8 +73,8 @@ export class UIScene extends Phaser.Scene {
     this.displayedCoins = this.services.ledger.coins;
     this.coinsText = this.add
       .text(COIN_HUD_ANCHOR.x + 22, COIN_HUD_ANCHOR.y, this.formatCoins(this.displayedCoins), {
-        color: "#ffe9a0",
-        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        color: THEME.color.coin,
+        fontFamily: BODY_FONT,
         fontSize: "22px",
         fontStyle: "bold",
       })
@@ -76,16 +82,16 @@ export class UIScene extends Phaser.Scene {
 
     this.goalText = this.add
       .text(COIN_HUD_ANCHOR.x + 150, COIN_HUD_ANCHOR.y, "", {
-        color: "#e8ddc3",
-        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        color: THEME.color.body,
+        fontFamily: BODY_FONT,
         fontSize: "18px",
       })
       .setOrigin(0, 0.5);
 
     this.blessingInfo = this.add
       .text(42, 104, "", {
-        color: "#d8c4f0",
-        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        color: THEME.color.magic,
+        fontFamily: BODY_FONT,
         fontSize: "16px",
         fontStyle: "bold",
       })
@@ -99,8 +105,8 @@ export class UIScene extends Phaser.Scene {
 
     this.statusText = this.add
       .text(GAME_WIDTH / 2, 690, "正在进入靶场", {
-        color: "#e8ddc3",
-        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        color: THEME.color.body,
+        fontFamily: BODY_FONT,
         fontSize: "18px",
       })
       .setOrigin(0.5);
@@ -117,8 +123,8 @@ export class UIScene extends Phaser.Scene {
 
     this.challengeInfo = this.add
       .text(GAME_WIDTH / 2, 110, "", {
-        color: "#ffe1a0",
-        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        color: THEME.color.high,
+        fontFamily: BODY_FONT,
         fontSize: "22px",
         fontStyle: "bold",
       })
@@ -126,11 +132,11 @@ export class UIScene extends Phaser.Scene {
       .setVisible(false);
     this.resultBanner = this.add
       .text(GAME_WIDTH / 2, 300, "", {
-        color: "#fff1bd",
-        fontFamily: "Georgia, serif",
+        color: THEME.color.title,
+        fontFamily: TITLE_FONT,
         fontSize: "40px",
         fontStyle: "bold",
-        stroke: "#273842",
+        stroke: THEME.color.panel,
         strokeThickness: 6,
       })
       .setOrigin(0.5)
@@ -208,7 +214,7 @@ export class UIScene extends Phaser.Scene {
       this.challengeInfo
         ?.setVisible(true)
         .setText(`挑战  ${state.challengeCoinsCollected} / ${target}  ·  ${seconds} 秒`)
-        .setColor(seconds <= 10 ? "#ff9d7a" : "#ffe1a0");
+        .setColor(seconds <= 10 ? THEME.color.danger : THEME.color.high);
       if (seconds !== this.lastChallengeSecond && seconds <= 10 && this.challengeInfo !== undefined) {
         this.tweens.add({
           targets: this.challengeInfo,
@@ -237,7 +243,7 @@ export class UIScene extends Phaser.Scene {
     const readyFraction =
       shootCooldownLeft <= 0 ? 1 : 1 - Math.min(1, shootCooldownLeft / this.cooldownPeak);
     fill.setScale(Math.max(0.001, readyFraction), 1);
-    fill.setTint(readyFraction >= 1 ? 0x8ee49a : 0xd7b96a);
+    fill.setTint(readyFraction >= 1 ? THEME.hex.ok : THEME.hex.ctaB);
   }
 
   private updateChallengeButton(phase: GamePhase): void {
@@ -261,7 +267,7 @@ export class UIScene extends Phaser.Scene {
 
   private handleChallengeEnded({ success }: { success: boolean }): void {
     this.challengeInfo?.setVisible(false);
-    this.showResultBanner(success ? "挑战成功" : "挑战失败", success ? "#a7e8a0" : "#f0c27a");
+    this.showResultBanner(success ? "挑战成功" : "挑战失败", success ? THEME.color.ok : THEME.color.high);
   }
 
   private showResultBanner(text: string, color: string): void {
@@ -308,10 +314,10 @@ export class UIScene extends Phaser.Scene {
     const button = this.add
       .text(x, y, label, {
         color: BUTTON_ENABLED_COLOR,
-        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        fontFamily: BODY_FONT,
         fontSize: "20px",
         fontStyle: "bold",
-        backgroundColor: "#2c3e49",
+        backgroundColor: BUTTON_BG,
         padding: { x: 16, y: 8 },
       })
       .setOrigin(0.5)
@@ -366,6 +372,11 @@ export class UIScene extends Phaser.Scene {
     // 未通关时在按钮上标出通关会扣除的金币，帮玩家决定先囤钱还是先通关。
     this.nextButton?.setText(cleared ? "下一关" : `确认通关 -${level.clearCoinGoal}`);
     this.setButtonEnabled(this.nextButton, canAdvance);
+    // 够钱可通关时，「下一关」变暖橙 CTA 主行动，召唤玩家点击。
+    if (this.nextButton !== undefined) {
+      this.nextButton.setBackgroundColor(canAdvance ? CTA_BG : BUTTON_BG);
+      this.nextButton.setColor(canAdvance ? CTA_TEXT : BUTTON_DISABLED_COLOR);
+    }
     this.setButtonEnabled(this.prevButton, progression.hasPreviousLevel());
 
     // 本关挑战宝箱已领取时在挑战按钮标注，避免误以为重复挑战仍有宝箱。

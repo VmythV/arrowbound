@@ -1,13 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 220">
-  <path d="m90 115-34 98m34-98 35 98m-68-24h66" fill="none" stroke="#644834" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="90" cy="90" r="84" fill="#f1e4bd" stroke="#513d38" stroke-width="7"/>
-  <circle cx="90" cy="90" r="74" fill="#273d56"/>
-  <circle cx="90" cy="90" r="65" fill="#f0e3c0"/>
-  <circle cx="90" cy="90" r="56" fill="#273d56"/>
-  <circle cx="90" cy="90" r="47" fill="#79aebc"/>
-  <circle cx="90" cy="90" r="38" fill="#c45045"/>
-  <circle cx="90" cy="90" r="29" fill="#e5b954"/>
-  <circle cx="90" cy="90" r="19" fill="#f2d779"/>
-  <circle cx="90" cy="90" r="9" fill="#8d3c39"/>
-  <path d="M21 69c13-31 38-51 69-59" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".3"/>
+  <path d="M90 150 68 208m22-58 24 58m-46-18h44" fill="none" stroke="#7a5a3c" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M64 190h52" fill="none" stroke="#C98A4B" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="90" cy="90" r="84" fill="#F1E4BD" stroke="#7a5a3c" stroke-width="7"/>
+  <circle cx="90" cy="90" r="73" fill="#4FA85C"/>
+  <circle cx="90" cy="90" r="61" fill="#F1E4BD"/>
+  <circle cx="90" cy="90" r="48" fill="#79AEBC"/>
+  <circle cx="90" cy="90" r="32" fill="#FF5C8A"/>
+  <circle cx="90" cy="90" r="16" fill="#FFF3B0" stroke="#f0b23a" stroke-width="2"/>
+  <g stroke="#FFE79A" stroke-width="5" stroke-linecap="round">
+    <path d="M90 8v16M90 156v16M8 90h16M156 90h16"/>
+    <path d="M31 31l11 11M149 31l-11 11M31 149l11-11M149 149l-11-11"/>
+  </g>
+  <path d="M40 52c10-22 30-38 56-44" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".3"/>
 </svg>

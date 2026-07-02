@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 import { getGameServices } from "../GameServices";
 import { ASSET_KEYS, VISUAL_ASSETS } from "../config/asset-manifest";
 import { GAME_HEIGHT, GAME_WIDTH, SCENE_KEYS } from "../config/game.constants";
+import { THEME } from "../config/theme";
 
 export class PreloadScene extends Phaser.Scene {
   private loadingFill: Phaser.GameObjects.Image | undefined;
@@ -12,7 +13,7 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.cameras.main.setBackgroundColor("#17253b");
+    this.cameras.main.setBackgroundColor(THEME.color.panel);
     this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 25, ASSET_KEYS.loadingTrack);
     this.loadingFill = this.add
       .image(GAME_WIDTH / 2 - 232, GAME_HEIGHT / 2 + 25, ASSET_KEYS.loadingFill)
@@ -20,8 +21,8 @@ export class PreloadScene extends Phaser.Scene {
       .setScale(0, 1);
     this.percentageText = this.add
       .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 34, "正在准备靶场 0%", {
-        color: "#f8f1dc",
-        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        color: THEME.color.title,
+        fontFamily: THEME.fonts.body,
         fontSize: "24px",
       })
       .setOrigin(0.5);

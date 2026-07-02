@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>arrowbound 暖色卡通 视觉预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Fredoka:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* 世界层 */
+    --sky-top:#FFD9A0; --sky-bot:#7FC8E8; --hill:#B8D9C4;
+    --grass-hi:#8FD06A; --grass-mid:#4FA85C; --grass-lo:#2E7D4F; --soil:#C98A4B;
+    /* UI 层 */
+    --panel:#241B36; --panel-2:#2E2450; --stroke:#F4B860; --shadow:#140E22;
+    --scrim:rgba(22,15,38,.62);
+    /* 语义层 */
+    --cta-a:#FF9F45; --cta-b:#FFC65C; --ok:#4CD07D; --danger:#FF6B5C;
+    --magic:#B98CFF; --disabled:#6E6486;
+    --title:#FFF6E6; --body:#EAD9C4; --muted:#B7A8C9;
+    /* 反馈层 */
+    --coin:#FFD24A; --coin-hi:#FFF6C8; --coin-pop:#FFF3B0;
+    --crit:#FF5C8A; --high:#FFC65C; --spark:#FFE79A;
+    --display:"Baloo 2","Fredoka",system-ui,sans-serif;
+    --sc:"Noto Sans SC",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#161225;color:var(--body);font-family:var(--sc);padding:32px 20px 80px}
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-family:var(--display);font-weight:800;color:var(--title);font-size:34px;margin:0 0 4px}
+  .sub{color:var(--muted);margin:0 0 28px}
+  h2{font-family:var(--display);font-weight:700;color:var(--title);font-size:22px;margin:38px 0 14px;
+     border-left:5px solid var(--stroke);padding-left:12px}
+  .grid{display:grid;gap:14px}
+  .sw{border-radius:14px;padding:14px;min-height:78px;display:flex;flex-direction:column;justify-content:flex-end;
+      box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:12px;font-weight:600}
+  .sw b{display:block;font-size:13px}
+  .sw .hex{font-family:var(--display);opacity:.85}
+  .row{display:flex;flex-wrap:wrap;gap:14px;align-items:stretch}
+  .card{background:var(--panel);border:3px solid var(--stroke);border-radius:20px;padding:18px;
+        box-shadow:0 10px 26px rgba(20,14,34,.5)}
+
+  /* ===== 游戏画面 mock ===== */
+  .stage{position:relative;height:340px;border-radius:22px;overflow:hidden;border:3px solid var(--stroke);
+         box-shadow:0 14px 34px rgba(20,14,34,.55)}
+  .sky{position:absolute;inset:0;background:linear-gradient(#FFD9A0,#F4C9A6 46%,#7FC8E8)}
+  .sun{position:absolute;right:120px;top:34px;width:96px;height:96px;border-radius:50%;
+       background:radial-gradient(circle,#FFF0B6,#FFE6A0 60%,rgba(255,230,160,0) 72%)}
+  .hills{position:absolute;left:0;right:0;bottom:120px;height:120px;background:var(--hill);opacity:.6;
+         border-radius:50% 50% 0 0/60px 60px 0 0}
+  .g1{position:absolute;left:0;right:0;bottom:64px;height:110px;background:var(--grass-hi);border-radius:40% 60% 0 0/40px}
+  .g2{position:absolute;left:0;right:0;bottom:30px;height:80px;background:var(--grass-mid)}
+  .g3{position:absolute;left:0;right:0;bottom:0;height:44px;background:var(--grass-lo)}
+  .stage .plate{position:absolute;left:70px;bottom:40px;width:120px;height:26px;background:var(--soil);
+         border:4px solid #9c6a34;border-radius:14px}
+  .stage svg{position:absolute}
+  .burst{position:absolute;right:150px;top:110px;text-align:center}
+  .burst .num{font-family:var(--display);font-weight:800;font-size:52px;color:#fff;
+        text-shadow:0 0 18px var(--crit),0 3px 0 #b3315e,0 6px 10px rgba(0,0,0,.35)}
+  .flash{position:absolute;inset:0;background:radial-gradient(circle at 78% 40%,rgba(255,92,138,.45),transparent 42%);
+        mix-blend-mode:screen}
+
+  /* ===== HUD ===== */
+  .hud{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .pill{background:var(--panel);border:3px solid var(--stroke);border-radius:18px;padding:10px 16px;
+        display:flex;align-items:center;gap:10px;box-shadow:0 8px 18px rgba(20,14,34,.45)}
+  .pill .lab{color:var(--muted);font-size:12px;font-weight:600}
+  .pill .val{font-family:var(--display);font-weight:700;color:var(--title);font-size:20px;line-height:1}
+  .coinbox{flex-direction:column;align-items:flex-start;gap:8px;min-width:280px}
+  .coinbox .top{display:flex;align-items:center;gap:10px}
+  .coinbox .cnum{font-family:var(--display);font-weight:800;font-size:30px;color:var(--coin);
+        text-shadow:0 2px 0 #a06a10}
+  .coinbox .goal{color:var(--muted);font-size:13px;font-weight:600}
+  .bar{width:100%;height:14px;border-radius:10px;background:#170f28;overflow:hidden;border:1px solid #3a2d55}
+  .bar > i{display:block;height:100%;width:62%;border-radius:10px;
+        background:linear-gradient(90deg,var(--coin),var(--coin-hi))}
+  .timer .val{color:#fff}
+  .timer.warn .val{color:var(--danger)}
+  .chip-magic{border-color:var(--magic)}
+  .chip-magic .val{color:#e7d6ff;font-size:15px}
+
+  /* ===== 底部操作栏 ===== */
+  .dock{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+  .btn{font-family:var(--sc);font-weight:700;border:none;border-radius:16px;padding:12px 18px;cursor:pointer;
+       display:inline-flex;align-items:center;gap:8px;font-size:15px;color:#2a1c0a;
+       box-shadow:0 6px 0 rgba(0,0,0,.22)}
+  .btn.sec{background:#3a2f56;color:var(--body);box-shadow:0 6px 0 #201736}
+  .btn.cta{background:linear-gradient(180deg,var(--cta-b),var(--cta-a));color:#5a2c00;
+       animation:pulse 1.6s ease-in-out infinite}
+  .btn.dis{background:#39324b;color:var(--disabled);box-shadow:0 6px 0 #241f33;cursor:not-allowed}
+  @keyframes pulse{0%,100%{box-shadow:0 6px 0 rgba(0,0,0,.22),0 0 0 rgba(255,159,69,.0)}
+       50%{box-shadow:0 6px 0 rgba(0,0,0,.22),0 0 22px rgba(255,180,96,.75)}}
+  .cool{flex:1;min-width:200px;height:14px;border-radius:10px;background:#170f28;border:1px solid #3a2d55;overflow:hidden}
+  .cool > i{display:block;height:100%;width:58%;background:linear-gradient(90deg,#7FC8E8,#4FA85C)}
+
+  /* ===== 卡片：商店 / 祝福 ===== */
+  .shopcard{width:340px}
+  .shophead{display:flex;align-items:center;gap:12px}
+  .shophead .name{font-family:var(--display);font-weight:700;color:var(--title);font-size:18px}
+  .shophead .lv{margin-left:auto;color:var(--muted);font-weight:700}
+  .eff{color:var(--body);font-size:14px;margin:10px 0}
+  .pips{display:flex;gap:5px;margin:8px 0 14px}
+  .pips i{width:14px;height:14px;border-radius:50%;background:#3a3152;display:inline-block}
+  .pips i.on{background:var(--cta-b)}
+  .buyrow{display:flex;align-items:center;gap:10px}
+  .price{background:var(--ok);color:#08351d;font-weight:700;border-radius:12px;padding:7px 12px;font-family:var(--display)}
+  .price.no{background:#39324b;color:var(--muted)}
+  .plus{margin-left:auto;width:44px;height:44px;border-radius:14px;border:none;cursor:pointer;
+        background:linear-gradient(180deg,var(--cta-b),var(--cta-a));color:#5a2c00;font-size:26px;font-weight:800;
+        font-family:var(--display);box-shadow:0 5px 0 rgba(0,0,0,.22)}
+  .bcard{width:210px;border-color:var(--magic);text-align:center}
+  .bcard .bt{font-family:var(--display);font-weight:700;color:#efe4ff;font-size:17px;margin:10px 0 6px}
+  .bcard .bd{color:var(--body);font-size:13px}
+
+  /* ===== 金币分层 ===== */
+  .coins{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-end}
+  .coins figure{margin:0;text-align:center;color:var(--muted);font-size:12px}
+  .coins figcaption{margin-top:6px}
+  .coins b{color:var(--body)}
+
+  /* ===== 角色 ===== */
+  .chars{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-end;justify-content:flex-start}
+  .chars figure{margin:0;text-align:center;color:var(--muted);font-size:13px}
+
+  /* ===== 字体对比 ===== */
+  .fonts{display:flex;gap:16px;flex-wrap:wrap}
+  .fontcol{flex:1;min-width:240px}
+  .fontcol .big{font-weight:800;font-size:46px;color:var(--coin);text-shadow:0 2px 0 #a06a10}
+  .fontcol .ttl{font-weight:700;font-size:24px;color:var(--title);margin-top:6px}
+  .baloo{font-family:"Baloo 2",sans-serif}
+  .fred{font-family:"Fredoka",sans-serif}
+  .tag{display:inline-block;background:#3a2f56;color:var(--body);border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700}
+  .note{color:var(--muted);font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>arrowbound 暖色卡通世界 视觉预览</h1>
+  <p class="sub">Cozy Cartoon direction preview. 用于在真实像素上确认配色、字体与组件。此页为设计 mock，非游戏构建。</p>
+
+  <!-- 游戏画面 mock -->
+  <h2>游戏画面气质 mock（命中十环瞬间）</h2>
+  <div class="stage">
+    <div class="sky"></div>
+    <div class="sun"></div>
+    <div class="hills"></div>
+    <div class="g1"></div><div class="g2"></div><div class="g3"></div>
+    <div class="plate"></div>
+    <!-- 玩家（弓箭手，拉弓朝向靶子） -->
+    <svg width="132" height="150" viewBox="0 0 160 170" style="left:52px;bottom:54px">
+      <rect x="58" y="128" width="18" height="32" rx="8" fill="#7a4e33" stroke="#4d2f1e" stroke-width="5"/>
+      <rect x="84" y="128" width="18" height="32" rx="8" fill="#7a4e33" stroke="#4d2f1e" stroke-width="5"/>
+      <path d="M54 134 Q48 96 66 82 L94 82 Q112 96 106 134 Z" fill="#5b6ee1" stroke="#38408f" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M73 86 Q80 84 87 86 L83 120 H77 Z" fill="#7d8bec" opacity=".7"/>
+      <rect x="58" y="112" width="44" height="12" rx="6" fill="#C98A4B" stroke="#8a5a2e" stroke-width="4"/>
+      <rect x="74" y="112" width="12" height="12" rx="3" fill="#F4B860" stroke="#8a5a2e" stroke-width="3"/>
+      <path d="M72 90 L100 86" stroke="#F2C79A" stroke-width="12" stroke-linecap="round"/>
+      <path d="M98 86 H134" stroke="#7a4e1e" stroke-width="3" stroke-linecap="round"/>
+      <path d="M134 86l-8-4v8z" fill="#c0c6cf" stroke="#5b6068" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M98 86l-8-4m8 4l-8 4" fill="none" stroke="#FF6B5C" stroke-width="3" stroke-linecap="round"/>
+      <path d="M126 40 Q150 88 126 132" fill="none" stroke="#E0A45A" stroke-width="7" stroke-linecap="round"/>
+      <path d="M126 40 L100 86 L126 132" fill="none" stroke="#f4e3c0" stroke-width="2.5"/>
+      <path d="M90 92 L124 86" stroke="#F2C79A" stroke-width="12" stroke-linecap="round"/>
+      <circle cx="126" cy="86" r="7" fill="#F2C79A" stroke="#7a4e33" stroke-width="3"/>
+      <circle cx="78" cy="50" r="26" fill="#F2C79A" stroke="#7a4e33" stroke-width="6"/>
+      <path d="M50 46 Q52 22 78 22 Q104 22 104 44 Q90 34 74 36 Q58 38 50 46 Z" fill="#E07A4E" stroke="#a34e2a" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M52 42 Q36 26 24 32 Q38 32 46 46 Z" fill="#FFE79A" stroke="#d9a53a" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="74" cy="50" r="4" fill="#33232b"/><circle cx="88" cy="50" r="4" fill="#33232b"/>
+      <circle cx="68" cy="58" r="3.6" fill="#f39a9a" opacity=".8"/><circle cx="92" cy="58" r="3.6" fill="#f39a9a" opacity=".8"/>
+      <path d="M76 60 Q81 64 86 60" fill="none" stroke="#8d4d4b" stroke-width="3" stroke-linecap="round"/>
+      <path d="M60 34 Q66 26 78 26" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+    </svg>
+    <!-- 靶子（十环发光） -->
+    <svg width="140" height="140" viewBox="0 0 140 140" style="right:120px;bottom:60px">
+      <circle cx="70" cy="70" r="62" fill="#F1E4BD" stroke="#7a5a3c" stroke-width="7"/>
+      <circle cx="70" cy="70" r="52" fill="#4FA85C"/>
+      <circle cx="70" cy="70" r="42" fill="#F1E4BD"/>
+      <circle cx="70" cy="70" r="32" fill="#79aebc"/>
+      <circle cx="70" cy="70" r="22" fill="#FF5C8A"/>
+      <circle cx="70" cy="70" r="12" fill="#FFF3B0"/>
+      <g stroke="#FFE79A" stroke-width="4" stroke-linecap="round">
+        <path d="M70 6v14M70 120v14M6 70h14M120 70h14M25 25l10 10M115 25l-10 10M25 115l10-10M115 115l-10-10"/>
+      </g>
+    </svg>
+    <div class="flash"></div>
+    <div class="burst"><div class="num">+260!</div></div>
+  </div>
+
+  <!-- HUD -->
+  <h2>顶部 HUD</h2>
+  <div class="hud">
+    <div class="pill"><span class="lab">关卡</span><span class="val">第7关 暮色靶场</span></div>
+    <div class="pill coinbox">
+      <div class="top">
+        <svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="#FFD24A" stroke="#a06a10" stroke-width="3"/><circle cx="13" cy="13" r="6.5" fill="#FFF6C8"/></svg>
+        <span class="cnum">12,480</span>
+        <span class="goal">目标 20,000</span>
+      </div>
+      <div class="bar"><i></i></div>
+    </div>
+    <div class="pill timer warn"><span class="lab">挑战</span><span class="val">0:08</span></div>
+    <div class="pill chip-magic"><span class="lab">祝福</span><span class="val">金币祝福 +30%</span></div>
+  </div>
+
+  <!-- 底部操作栏 -->
+  <h2>底部操作栏（下一关脉冲召唤 / 冷却条）</h2>
+  <div class="dock">
+    <button class="btn sec">商店</button>
+    <button class="btn sec">挑战</button>
+    <button class="btn cta">下一关 &#9654;</button>
+    <button class="btn dis">下一关（差 7,520）</button>
+    <button class="btn sec">设置</button>
+  </div>
+  <div class="dock"><div class="cool"><i></i></div><span class="note">冷却条：可射击瞬间整条微亮</span></div>
+
+  <!-- 字体对比 -->
+  <h2>字体对比（金币数 / 标题）</h2>
+  <div class="fonts">
+    <div class="fontcol card">
+      <span class="tag">Baloo 2</span>
+      <div class="big baloo">12,480</div>
+      <div class="ttl baloo">星辉靶场 命中十环</div>
+      <p class="note">更圆润饱满、字腔大，数字更“胖萌”。</p>
+    </div>
+    <div class="fontcol card">
+      <span class="tag">Fredoka</span>
+      <div class="big fred">12,480</div>
+      <div class="ttl fred">星辉靶场 命中十环</div>
+      <p class="note">更几何简洁、略窄，现代感更强。</p>
+    </div>
+  </div>
+
+  <!-- 配色 -->
+  <h2>配色系统</h2>
+  <p class="note">世界层</p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+    <div class="sw" style="background:#FFD9A0;color:#7a5320"><b>天空顶</b><span class="hex">#FFD9A0</span></div>
+    <div class="sw" style="background:#7FC8E8;color:#0f4258"><b>天空底</b><span class="hex">#7FC8E8</span></div>
+    <div class="sw" style="background:#8FD06A;color:#1f4718"><b>草地亮</b><span class="hex">#8FD06A</span></div>
+    <div class="sw" style="background:#4FA85C;color:#eafff0"><b>草地中</b><span class="hex">#4FA85C</span></div>
+    <div class="sw" style="background:#2E7D4F;color:#eafff0"><b>草地暗</b><span class="hex">#2E7D4F</span></div>
+    <div class="sw" style="background:#C98A4B;color:#3d2409"><b>泥土/地台</b><span class="hex">#C98A4B</span></div>
+  </div>
+  <p class="note">UI 层</p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+    <div class="sw" style="background:#241B36;color:#d8c9ef"><b>面板底</b><span class="hex">#241B36</span></div>
+    <div class="sw" style="background:#2E2450;color:#e7ddff"><b>面板次层</b><span class="hex">#2E2450</span></div>
+    <div class="sw" style="background:#F4B860;color:#5a3a08"><b>描边暖金</b><span class="hex">#F4B860</span></div>
+  </div>
+  <p class="note">语义层</p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+    <div class="sw" style="background:linear-gradient(90deg,#FF9F45,#FFC65C);color:#5a2c00"><b>主行动 CTA</b><span class="hex">#FF9F45 &rarr; #FFC65C</span></div>
+    <div class="sw" style="background:#4CD07D;color:#08351d"><b>成功/达标</b><span class="hex">#4CD07D</span></div>
+    <div class="sw" style="background:#FF6B5C;color:#4a0f0a"><b>倒计时告急</b><span class="hex">#FF6B5C</span></div>
+    <div class="sw" style="background:#B98CFF;color:#2b1550"><b>祝福/魔法</b><span class="hex">#B98CFF</span></div>
+  </div>
+  <p class="note">反馈层</p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+    <div class="sw" style="background:#FFD24A;color:#6b4405"><b>金币主色</b><span class="hex">#FFD24A</span></div>
+    <div class="sw" style="background:#FFF3B0;color:#6b5405"><b>金币爆点</b><span class="hex">#FFF3B0</span></div>
+    <div class="sw" style="background:#FF5C8A;color:#4a0c22"><b>十环/暴击</b><span class="hex">#FF5C8A</span></div>
+    <div class="sw" style="background:#FFE79A;color:#6b4f05"><b>星爆火花</b><span class="hex">#FFE79A</span></div>
+  </div>
+
+  <!-- 商店 / 祝福 -->
+  <h2>商店卡片 / 祝福卡片</h2>
+  <div class="row">
+    <div class="card shopcard">
+      <div class="shophead">
+        <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="19" fill="#79aebc" stroke="#2f4a52" stroke-width="4"/><circle cx="22" cy="22" r="8" fill="#FF5C8A"/><circle cx="22" cy="22" r="3" fill="#FFF3B0"/></svg>
+        <span class="name">精准瞄准</span><span class="lv">Lv.7</span>
+      </div>
+      <div class="eff">效果：十环基础半径 +7%</div>
+      <div class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+      <div class="buyrow"><span class="price">128 金币</span><button class="plus">+</button></div>
+    </div>
+    <div class="card shopcard">
+      <div class="shophead">
+        <svg width="44" height="44" viewBox="0 0 44 44"><rect x="6" y="8" width="32" height="28" rx="8" fill="#8a7bd8" stroke="#463a86" stroke-width="4"/><circle cx="22" cy="22" r="7" fill="#FFE14D"/><path d="M22 4v6" stroke="#463a86" stroke-width="4" stroke-linecap="round"/></svg>
+        <span class="name">机械贪婪</span><span class="lv">Lv.24</span>
+      </div>
+      <div class="eff">效果：机器人金币 &times;2.62（无限解封）</div>
+      <div class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+      <div class="buyrow"><span class="price no">9,860 金币（差 320）</span><button class="plus" style="filter:grayscale(1);opacity:.6">+</button></div>
+    </div>
+    <div class="card bcard">
+      <svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="#FFD24A" stroke="#a06a10" stroke-width="5"/><path d="M30 16l4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1z" fill="#FFF3B0"/></svg>
+      <div class="bt">金币祝福</div>
+      <div class="bd">本关所有金币价值 +30%</div>
+    </div>
+    <div class="card bcard">
+      <svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="#FF5C8A" stroke="#7a2340" stroke-width="5"/><text x="30" y="39" text-anchor="middle" font-family="Baloo 2,sans-serif" font-weight="800" font-size="24" fill="#fff">10</text></svg>
+      <div class="bt">十环狂热</div>
+      <div class="bd">本关十环金币 +100%</div>
+    </div>
+  </div>
+
+  <!-- 金币分层 -->
+  <h2>金币分层（价值越高越夸张）</h2>
+  <div class="card coins">
+    <figure>
+      <svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="12" fill="#FFD24A" stroke="#a06a10" stroke-width="3"/></svg>
+      <figcaption><b>小金币</b><br>1-3</figcaption>
+    </figure>
+    <figure>
+      <svg width="42" height="42" viewBox="0 0 42 42"><circle cx="21" cy="21" r="16" fill="#FFD24A" stroke="#a06a10" stroke-width="4"/><path d="M24 10l-8 11h6l-5 12 11-15h-6z" fill="#FFF6C8"/></svg>
+      <figcaption><b>普通金币</b><br>4-9</figcaption>
+    </figure>
+    <figure>
+      <svg width="54" height="54" viewBox="0 0 54 54"><circle cx="27" cy="27" r="22" fill="#FFD24A" stroke="#a06a10" stroke-width="5"/><circle cx="27" cy="27" r="13" fill="#FFE07A" stroke="#c98a1e" stroke-width="2"/><path d="M30 14l-9 13h7l-6 13 12-16h-6z" fill="#FFF6C8"/></svg>
+      <figcaption><b>大金币</b><br>10-49</figcaption>
+    </figure>
+    <figure>
+      <svg width="60" height="60" viewBox="0 0 60 60"><path d="M18 22c-6 6-9 16-6 26 3 9 24 9 27 0 3-10 0-20-6-26z" fill="#E9A94B" stroke="#7a4e1e" stroke-width="4"/><circle cx="26" cy="18" r="6" fill="#FFD24A" stroke="#a06a10" stroke-width="3"/><circle cx="35" cy="16" r="6" fill="#FFD24A" stroke="#a06a10" stroke-width="3"/><text x="30" y="46" text-anchor="middle" font-family="Baloo 2" font-weight="800" font-size="16" fill="#6b4405">$</text></svg>
+      <figcaption><b>金币袋</b><br>50-199</figcaption>
+    </figure>
+    <figure>
+      <svg width="70" height="70" viewBox="0 0 70 70"><circle cx="35" cy="35" r="30" fill="#FFF3B0" opacity=".45"/><circle cx="35" cy="35" r="22" fill="#FFD24A" stroke="#a06a10" stroke-width="5"/><circle cx="35" cy="35" r="13" fill="#FFF6C8"/><g fill="#FFF3B0"><circle cx="10" cy="20" r="2.5"/><circle cx="60" cy="24" r="2.5"/><circle cx="16" cy="56" r="2.5"/><circle cx="58" cy="52" r="2.5"/></g></svg>
+      <figcaption><b>发光金币</b><br>200+</figcaption>
+    </figure>
+  </div>
+
+  <!-- 角色 -->
+  <h2>角色吉祥物</h2>
+  <div class="card chars">
+    <figure>
+      <svg width="116" height="123" viewBox="0 0 160 170">
+        <rect x="58" y="128" width="18" height="32" rx="8" fill="#7a4e33" stroke="#4d2f1e" stroke-width="5"/>
+        <rect x="84" y="128" width="18" height="32" rx="8" fill="#7a4e33" stroke="#4d2f1e" stroke-width="5"/>
+        <path d="M54 134 Q48 96 66 82 L94 82 Q112 96 106 134 Z" fill="#5b6ee1" stroke="#38408f" stroke-width="6" stroke-linejoin="round"/>
+        <path d="M73 86 Q80 84 87 86 L83 120 H77 Z" fill="#7d8bec" opacity=".7"/>
+        <rect x="58" y="112" width="44" height="12" rx="6" fill="#C98A4B" stroke="#8a5a2e" stroke-width="4"/>
+        <rect x="74" y="112" width="12" height="12" rx="3" fill="#F4B860" stroke="#8a5a2e" stroke-width="3"/>
+        <path d="M72 90 L100 86" stroke="#F2C79A" stroke-width="12" stroke-linecap="round"/>
+        <path d="M98 86 H134" stroke="#7a4e1e" stroke-width="3" stroke-linecap="round"/>
+        <path d="M134 86l-8-4v8z" fill="#c0c6cf" stroke="#5b6068" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M98 86l-8-4m8 4l-8 4" fill="none" stroke="#FF6B5C" stroke-width="3" stroke-linecap="round"/>
+        <path d="M126 40 Q150 88 126 132" fill="none" stroke="#E0A45A" stroke-width="7" stroke-linecap="round"/>
+        <path d="M126 40 L100 86 L126 132" fill="none" stroke="#f4e3c0" stroke-width="2.5"/>
+        <path d="M90 92 L124 86" stroke="#F2C79A" stroke-width="12" stroke-linecap="round"/>
+        <circle cx="126" cy="86" r="7" fill="#F2C79A" stroke="#7a4e33" stroke-width="3"/>
+        <circle cx="78" cy="50" r="26" fill="#F2C79A" stroke="#7a4e33" stroke-width="6"/>
+        <path d="M50 46 Q52 22 78 22 Q104 22 104 44 Q90 34 74 36 Q58 38 50 46 Z" fill="#E07A4E" stroke="#a34e2a" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M52 42 Q36 26 24 32 Q38 32 46 46 Z" fill="#FFE79A" stroke="#d9a53a" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="74" cy="50" r="4" fill="#33232b"/><circle cx="88" cy="50" r="4" fill="#33232b"/>
+        <circle cx="68" cy="58" r="3.6" fill="#f39a9a" opacity=".8"/><circle cx="92" cy="58" r="3.6" fill="#f39a9a" opacity=".8"/>
+        <path d="M76 60 Q81 64 86 60" fill="none" stroke="#8d4d4b" stroke-width="3" stroke-linecap="round"/>
+        <path d="M60 34 Q66 26 78 26" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+      </svg>
+      <figcaption>小弓手</figcaption>
+    </figure>
+    <figure>
+      <svg width="96" height="110" viewBox="0 0 96 110"><path d="M48 6v14" stroke="#5b5170" stroke-width="5" stroke-linecap="round"/><circle cx="48" cy="6" r="5" fill="#FFE14D"/><rect x="18" y="20" width="60" height="58" rx="16" fill="#8a7bd8" stroke="#463a86" stroke-width="6"/><circle cx="48" cy="48" r="16" fill="#241B36"/><circle cx="48" cy="48" r="10" fill="#2DE2E6"/><circle cx="48" cy="48" r="4" fill="#eafcff"/><rect x="26" y="80" width="16" height="24" rx="6" fill="#6d5fc0" stroke="#463a86" stroke-width="5"/><rect x="54" y="80" width="16" height="24" rx="6" fill="#6d5fc0" stroke="#463a86" stroke-width="5"/></svg>
+      <figcaption>独眼萌机器人</figcaption>
+    </figure>
+    <figure>
+      <svg width="96" height="96" viewBox="0 0 96 96"><path d="M20 46c-8 4-12 2-14-4 6-4 12-3 16 1z" fill="#FFE79A" stroke="#c98a1e" stroke-width="3"/><path d="M76 46c8 4 12 2 14-4-6-4-12-3-16 1z" fill="#FFE79A" stroke="#c98a1e" stroke-width="3"/><circle cx="48" cy="48" r="28" fill="#FFD24A" stroke="#a06a10" stroke-width="6"/><circle cx="48" cy="48" r="15" fill="#FFF6C8"/><circle cx="41" cy="45" r="4" fill="#33232b"/><circle cx="55" cy="45" r="4" fill="#33232b"/><path d="M43 56c3 3 7 3 10 0" fill="none" stroke="#8d5a1a" stroke-width="3" stroke-linecap="round"/></svg>
+      <figcaption>金币宠物</figcaption>
+    </figure>
+    <figure>
+      <svg width="100" height="110" viewBox="0 0 100 110"><path d="M50 78l-8 26m8-26l8 26m-16-8h16" stroke="#7a5a3c" stroke-width="8" stroke-linecap="round" fill="none"/><circle cx="50" cy="42" r="38" fill="#F1E4BD" stroke="#7a5a3c" stroke-width="6"/><circle cx="50" cy="42" r="30" fill="#4FA85C"/><circle cx="50" cy="42" r="22" fill="#F1E4BD"/><circle cx="50" cy="42" r="14" fill="#79aebc"/><circle cx="50" cy="42" r="7" fill="#FF5C8A"/></svg>
+      <figcaption>萌化靶子</figcaption>
+    </figure>
+  </div>
+
+  <p class="note" style="margin-top:34px">说明：本页角色/图标为快速示意形，用于确认配色与气质；正式实现会以 SVG 精修并放入 <code>public/assets/svg/</code>。若浏览器离线，Baloo 2 / Fredoka 会回退到系统圆体。</p>
+</div>
+</body>
+</html>
