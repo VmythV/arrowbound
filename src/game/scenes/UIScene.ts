@@ -38,6 +38,7 @@ export class UIScene extends Phaser.Scene {
   private resultBanner: Phaser.GameObjects.Text | undefined;
   private blessingInfo: Phaser.GameObjects.Text | undefined;
   private cooldownFill: Phaser.GameObjects.Image | undefined;
+  private goalFill: Phaser.GameObjects.Image | undefined;
   private coinCountTween: Phaser.Tweens.Tween | undefined;
   private displayedCoins = 0;
   private lastChallengeSecond = -1;
@@ -87,6 +88,13 @@ export class UIScene extends Phaser.Scene {
         fontSize: "18px",
       })
       .setOrigin(0, 0.5);
+
+    // 常驻目标进度条：金币旁始终显示距离本关通关目标的进度。
+    this.add.image(COIN_HUD_ANCHOR.x + 22, 64, ASSET_KEYS.goalTrack).setOrigin(0, 0.5);
+    this.goalFill = this.add
+      .image(COIN_HUD_ANCHOR.x + 26, 64, ASSET_KEYS.goalFill)
+      .setOrigin(0, 0.5)
+      .setTint(THEME.hex.coin);
 
     this.blessingInfo = this.add
       .text(42, 104, "", {
@@ -368,6 +376,11 @@ export class UIScene extends Phaser.Scene {
       cleared ? `通关目标 ${level.clearCoinGoal} · 已通关` : `通关目标 ${level.clearCoinGoal}`,
     );
 
+    // 目标进度条：达标或已通关时填满并转为成功绿，牵引玩家继续。
+    const goalFraction =
+      cleared || level.clearCoinGoal <= 0 ? 1 : Math.max(0, Math.min(1, coins / level.clearCoinGoal));
+    this.goalFill?.setScale(Math.max(0.001, goalFraction), 1).setTint(goalFraction >= 1 ? THEME.hex.ok : THEME.hex.coin);
+
     const canAdvance = progression.hasNextLevel() && (cleared || coins >= level.clearCoinGoal);
     // 未通关时在按钮上标出通关会扣除的金币，帮玩家决定先囤钱还是先通关。
     this.nextButton?.setText(cleared ? "下一关" : `确认通关 -${level.clearCoinGoal}`);
@@ -477,6 +490,7 @@ export class UIScene extends Phaser.Scene {
     this.resultBanner = undefined;
     this.blessingInfo = undefined;
     this.cooldownFill = undefined;
+    this.goalFill = undefined;
     this.coinIcon = undefined;
     this.coinsText = undefined;
     this.levelText = undefined;

@@ -3,11 +3,13 @@ import { ASSET_KEYS } from "../config/asset-manifest";
 import { BLESSING_CONFIGS, type BlessingConfig } from "../config/blessing.config";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config/game.constants";
 import type { GameServices } from "../GameServices";
+import { THEME } from "../config/theme";
 
 const CARD_WIDTH = 220;
 const CARD_GAP = 28;
 const CARD_CENTER_Y = 380;
-const BODY_FONT = 'Inter, "Noto Sans SC", sans-serif';
+const BODY_FONT = THEME.fonts.body;
+const TITLE_FONT = THEME.fonts.display;
 
 const CONFIG_BY_ID = new Map<string, BlessingConfig>(
   BLESSING_CONFIGS.map((config) => [config.id, config]),
@@ -37,8 +39,8 @@ export class BlessingOverlay {
     this.container = scene.add.container(0, 0).setDepth(1101).setVisible(false).setAlpha(0);
     this.title = scene.add
       .text(GAME_WIDTH / 2, 180, "", {
-        color: "#fff1bd",
-        fontFamily: "Georgia, serif",
+        color: THEME.color.title,
+        fontFamily: TITLE_FONT,
         fontSize: "28px",
         fontStyle: "bold",
       })
@@ -96,7 +98,7 @@ export class BlessingOverlay {
       .setInteractive({ useHandCursor: true });
     const name = this.scene.add
       .text(centerX, CARD_CENTER_Y - 118, config.name, {
-        color: "#fff1bd",
+        color: THEME.color.title,
         fontFamily: BODY_FONT,
         fontSize: "20px",
         fontStyle: "bold",
@@ -105,7 +107,7 @@ export class BlessingOverlay {
     const description = this.scene.add
       .text(centerX, CARD_CENTER_Y + 50, config.description, {
         align: "center",
-        color: "#d7e0e6",
+        color: THEME.color.body,
         fontFamily: BODY_FONT,
         fontSize: "16px",
         wordWrap: { width: CARD_WIDTH - 40 },
@@ -113,7 +115,7 @@ export class BlessingOverlay {
       .setOrigin(0.5, 0);
     const hint = this.scene.add
       .text(centerX, CARD_CENTER_Y + 118, "点击选择", {
-        color: "#9fb0b8",
+        color: THEME.color.muted,
         fontFamily: BODY_FONT,
         fontSize: "14px",
       })

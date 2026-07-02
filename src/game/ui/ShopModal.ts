@@ -3,6 +3,7 @@ import { ASSET_KEYS } from "../config/asset-manifest";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config/game.constants";
 import { SHOP_CONFIGS, type ShopItemConfig, type ShopItemId, type ShopUnlockCondition } from "../config/shop.config";
 import type { GameServices } from "../GameServices";
+import { THEME } from "../config/theme";
 
 const PANEL_X = GAME_WIDTH / 2;
 const PANEL_Y = 330;
@@ -13,7 +14,8 @@ const LEVEL_X = 628;
 const COST_X = 812;
 const BUTTON_X = 1004;
 
-const BODY_FONT = 'Inter, "Noto Sans SC", sans-serif';
+const BODY_FONT = THEME.fonts.body;
+const TITLE_FONT = THEME.fonts.display;
 
 type ShopRow = {
   readonly config: ShopItemConfig;
@@ -51,15 +53,15 @@ export class ShopModal {
     const panel = scene.add.image(PANEL_X, PANEL_Y, ASSET_KEYS.modalPanel);
     const title = scene.add
       .text(PANEL_X, PANEL_Y - 278, "永久商店", {
-        color: "#fff1bd",
-        fontFamily: "Georgia, serif",
+        color: THEME.color.title,
+        fontFamily: TITLE_FONT,
         fontSize: "26px",
         fontStyle: "bold",
       })
       .setOrigin(0.5);
     this.coinsText = scene.add
       .text(230, PANEL_Y - 278, "", {
-        color: "#ffe9a0",
+        color: THEME.color.coin,
         fontFamily: BODY_FONT,
         fontSize: "20px",
         fontStyle: "bold",
@@ -67,11 +69,11 @@ export class ShopModal {
       .setOrigin(0, 0.5);
     const closeButton = scene.add
       .text(1050, PANEL_Y - 278, "关闭", {
-        color: "#f8f1dc",
+        color: THEME.color.title,
         fontFamily: BODY_FONT,
         fontSize: "18px",
         fontStyle: "bold",
-        backgroundColor: "#3a4d58",
+        backgroundColor: THEME.color.panelAlt,
         padding: { x: 12, y: 6 },
       })
       .setOrigin(0.5)
@@ -140,13 +142,13 @@ export class ShopModal {
     if (row === undefined) {
       return;
     }
-    row.name.setColor("#a7e8a0");
+    row.name.setColor(THEME.color.ok);
     this.scene.tweens.add({
       targets: [row.name, row.level],
       scale: { from: 1.12, to: 1 },
       duration: 260,
       ease: "Quad.Out",
-      onComplete: () => row.name.setColor("#f8f1dc"),
+      onComplete: () => row.name.setColor(THEME.color.title),
     });
   }
 
@@ -174,7 +176,7 @@ export class ShopModal {
     const y = ROW_START_Y + index * ROW_STEP;
     const name = this.scene.add
       .text(NAME_X, y - 11, config.name, {
-        color: "#f8f1dc",
+        color: THEME.color.title,
         fontFamily: BODY_FONT,
         fontSize: "20px",
         fontStyle: "bold",
@@ -182,32 +184,32 @@ export class ShopModal {
       .setOrigin(0, 0.5);
     const effect = this.scene.add
       .text(NAME_X, y + 13, "", {
-        color: "#c9d6dd",
+        color: THEME.color.muted,
         fontFamily: BODY_FONT,
         fontSize: "15px",
       })
       .setOrigin(0, 0.5);
     const level = this.scene.add
       .text(LEVEL_X, y, "", {
-        color: "#e8ddc3",
+        color: THEME.color.body,
         fontFamily: BODY_FONT,
         fontSize: "17px",
       })
       .setOrigin(0.5);
     const cost = this.scene.add
       .text(COST_X, y, "", {
-        color: "#ffe9a0",
+        color: THEME.color.coin,
         fontFamily: BODY_FONT,
         fontSize: "17px",
       })
       .setOrigin(0.5);
     const button = this.scene.add
       .text(BUTTON_X, y, "购买", {
-        color: "#f8f1dc",
+        color: THEME.color.title,
         fontFamily: BODY_FONT,
         fontSize: "18px",
         fontStyle: "bold",
-        backgroundColor: "#2f6f45",
+        backgroundColor: THEME.color.ok,
         padding: { x: 16, y: 7 },
       })
       .setOrigin(0.5)
@@ -231,13 +233,13 @@ export class ShopModal {
 
     if (!shop.isUnlocked(id, context)) {
       row.name.setAlpha(0.5);
-      row.effect.setText(`未解锁：${this.describeUnlock(row.config.unlockCondition)}`).setColor("#9aa7ae");
+      row.effect.setText(`未解锁：${this.describeUnlock(row.config.unlockCondition)}`).setColor(THEME.color.muted);
       row.cost.setText("");
       this.setButton(row.button, "锁定", false);
       return;
     }
     if (shop.isMaxed(id)) {
-      row.effect.setText(`已满级：${shop.describeEffectAtLevel(id, level)}`).setColor("#c9d6dd");
+      row.effect.setText(`已满级：${shop.describeEffectAtLevel(id, level)}`).setColor(THEME.color.muted);
       row.level.setText(`Lv.${maxLevel}（满级）`);
       row.cost.setText("");
       this.setButton(row.button, "满级", false);
@@ -245,15 +247,15 @@ export class ShopModal {
     }
     const cost = shop.getCost(id) ?? 0;
     const affordable = this.services.ledger.coins >= cost;
-    row.effect.setText(`下一级：${shop.describeEffectAtLevel(id, level + 1)}`).setColor("#c9d6dd");
-    row.cost.setText(`价格 ${cost}`).setColor(affordable ? "#ffe9a0" : "#e08a7a");
+    row.effect.setText(`下一级：${shop.describeEffectAtLevel(id, level + 1)}`).setColor(THEME.color.muted);
+    row.cost.setText(`价格 ${cost}`).setColor(affordable ? THEME.color.coin : THEME.color.danger);
     this.setButton(row.button, "购买", affordable);
   }
 
   private setButton(button: Phaser.GameObjects.Text, label: string, enabled: boolean): void {
     button.setText(label);
     button.setAlpha(enabled ? 1 : 0.5);
-    button.setBackgroundColor(enabled ? "#2f6f45" : "#39474f");
+    button.setBackgroundColor(enabled ? THEME.color.ok : THEME.color.panelAlt);
     if (enabled) {
       button.setInteractive({ useHandCursor: true });
     } else {

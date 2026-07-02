@@ -44,6 +44,8 @@ export const ASSET_KEYS = {
   blessingCard: "ui-blessing-card",
   cooldownTrack: "ui-cooldown-track",
   cooldownFill: "ui-cooldown-fill",
+  goalTrack: "ui-goal-track",
+  goalFill: "ui-goal-fill",
   missDust: "effect-miss-dust",
   hitSpark: "effect-hit-spark",
 } as const;
@@ -72,6 +74,8 @@ export const VISUAL_ASSETS: readonly VisualAssetDefinition[] = [
   asset(ASSET_KEYS.blessingCard, "ui/blessing-card.svg", 220, 300, "ui"),
   asset(ASSET_KEYS.cooldownTrack, "ui/cooldown-track.svg", 200, 16, "ui"),
   asset(ASSET_KEYS.cooldownFill, "ui/cooldown-fill.svg", 192, 8, "ui"),
+  asset(ASSET_KEYS.goalTrack, "ui/goal-track.svg", 260, 14, "ui"),
+  asset(ASSET_KEYS.goalFill, "ui/goal-fill.svg", 252, 8, "ui"),
   asset(ASSET_KEYS.missDust, "effects/miss-dust.svg", 96, 48, "effects"),
   asset(ASSET_KEYS.hitSpark, "effects/hit-spark.svg", 96, 96, "effects"),
 ] as const;

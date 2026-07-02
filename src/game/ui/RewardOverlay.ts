@@ -4,10 +4,12 @@ import { GAME_HEIGHT, GAME_WIDTH } from "../config/game.constants";
 import { SHOP_CONFIGS } from "../config/shop.config";
 import type { PendingReward } from "../state/SaveData";
 import type { GameServices } from "../GameServices";
+import { THEME } from "../config/theme";
 
 const CENTER_X = GAME_WIDTH / 2;
 const CHEST_Y = 320;
-const BODY_FONT = 'Inter, "Noto Sans SC", sans-serif';
+const BODY_FONT = THEME.fonts.body;
+const TITLE_FONT = THEME.fonts.display;
 
 function shopItemName(itemId: string): string {
   return SHOP_CONFIGS.find((config) => config.id === itemId)?.name ?? itemId;
@@ -51,8 +53,8 @@ export class RewardOverlay {
     this.container = scene.add.container(0, 0).setDepth(1201).setVisible(false).setAlpha(0);
     this.titleText = scene.add
       .text(CENTER_X, 180, "", {
-        color: "#fff1bd",
-        fontFamily: "Georgia, serif",
+        color: THEME.color.title,
+        fontFamily: TITLE_FONT,
         fontSize: "30px",
         fontStyle: "bold",
       })
@@ -60,7 +62,7 @@ export class RewardOverlay {
     this.chest = scene.add.image(CENTER_X, CHEST_Y, ASSET_KEYS.chestBasic).setScale(1.4);
     this.descriptionText = scene.add
       .text(CENTER_X, 430, "", {
-        color: "#ffe9a0",
+        color: THEME.color.coin,
         fontFamily: BODY_FONT,
         fontSize: "24px",
         fontStyle: "bold",
@@ -68,11 +70,11 @@ export class RewardOverlay {
       .setOrigin(0.5);
     const claimButton = scene.add
       .text(CENTER_X, 500, "领取", {
-        color: "#f8f1dc",
+        color: THEME.color.title,
         fontFamily: BODY_FONT,
         fontSize: "22px",
         fontStyle: "bold",
-        backgroundColor: "#2f6f45",
+        backgroundColor: THEME.color.ok,
         padding: { x: 26, y: 10 },
       })
       .setOrigin(0.5)

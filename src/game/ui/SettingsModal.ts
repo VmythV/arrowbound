@@ -2,10 +2,12 @@ import * as Phaser from "phaser";
 import { ASSET_KEYS } from "../config/asset-manifest";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config/game.constants";
 import type { GameServices } from "../GameServices";
+import { THEME } from "../config/theme";
 
 const PANEL_X = GAME_WIDTH / 2;
 const PANEL_Y = 330;
-const BODY_FONT = 'Inter, "Noto Sans SC", sans-serif';
+const BODY_FONT = THEME.fonts.body;
+const TITLE_FONT = THEME.fonts.display;
 const VOLUME_STEP = 0.1;
 
 type VolumeChannel = "master" | "music" | "sfx";
@@ -41,13 +43,13 @@ export class SettingsModal {
     const panel = scene.add.image(PANEL_X, PANEL_Y, ASSET_KEYS.modalPanel);
     const title = scene.add
       .text(PANEL_X, PANEL_Y - 278, "设置", {
-        color: "#fff1bd",
-        fontFamily: "Georgia, serif",
+        color: THEME.color.title,
+        fontFamily: TITLE_FONT,
         fontSize: "26px",
         fontStyle: "bold",
       })
       .setOrigin(0.5);
-    const closeButton = this.textButton(1050, PANEL_Y - 278, "关闭", "#3a4d58", () => {
+    const closeButton = this.textButton(1050, PANEL_Y - 278, "关闭", THEME.color.panelAlt, () => {
       this.services.events.emit("intent:close-modal", {});
     });
     this.container.add([panel, title, closeButton]);
@@ -56,10 +58,10 @@ export class SettingsModal {
     this.rows.push(this.buildVolumeRow("music", "音乐", 236));
     this.rows.push(this.buildVolumeRow("sfx", "音效", 302));
 
-    this.muteButton = this.textButton(PANEL_X, 380, "", "#3a4d58", () => {
+    this.muteButton = this.textButton(PANEL_X, 380, "", THEME.color.panelAlt, () => {
       this.services.events.emit("intent:toggle-mute", {});
     });
-    const resetButton = this.textButton(PANEL_X, 470, "清除存档并重新开始", "#7a3b35", () => {
+    const resetButton = this.textButton(PANEL_X, 470, "清除存档并重新开始", THEME.color.danger, () => {
       this.services.events.emit("intent:reset-save", {});
     });
     this.container.add([this.muteButton, resetButton]);
@@ -130,23 +132,23 @@ export class SettingsModal {
   private buildVolumeRow(channel: VolumeChannel, label: string, y: number): VolumeRow {
     const labelText = this.scene.add
       .text(240, y, label, {
-        color: "#e8ddc3",
+        color: THEME.color.body,
         fontFamily: BODY_FONT,
         fontSize: "20px",
       })
       .setOrigin(0, 0.5);
-    const minus = this.textButton(560, y, "-", "#3a4d58", () => {
+    const minus = this.textButton(560, y, "-", THEME.color.panelAlt, () => {
       this.services.events.emit("intent:adjust-volume", { channel, delta: -VOLUME_STEP });
     });
     const value = this.scene.add
       .text(660, y, "", {
-        color: "#ffe9a0",
+        color: THEME.color.coin,
         fontFamily: BODY_FONT,
         fontSize: "20px",
         fontStyle: "bold",
       })
       .setOrigin(0.5);
-    const plus = this.textButton(760, y, "+", "#3a4d58", () => {
+    const plus = this.textButton(760, y, "+", THEME.color.panelAlt, () => {
       this.services.events.emit("intent:adjust-volume", { channel, delta: VOLUME_STEP });
     });
     this.container.add([labelText, minus, value, plus]);
@@ -162,7 +164,7 @@ export class SettingsModal {
   ): Phaser.GameObjects.Text {
     const button = this.scene.add
       .text(x, y, label, {
-        color: "#f8f1dc",
+        color: THEME.color.title,
         fontFamily: BODY_FONT,
         fontSize: "20px",
         fontStyle: "bold",
