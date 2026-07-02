@@ -1,5 +1,6 @@
 import { GameEventBus } from "./events/GameEventBus";
 import { StateController } from "./state/StateController";
+import { BlessingService } from "./systems/BlessingService";
 import { CoinLedger } from "./systems/CoinLedger";
 import { GameClock } from "./systems/GameClock";
 import { ProgressionService } from "./systems/ProgressionService";
@@ -16,19 +17,22 @@ export type GameServices = {
   readonly ledger: CoinLedger;
   readonly progression: ProgressionService;
   readonly shop: ShopService;
+  readonly blessings: BlessingService;
 };
 
 export function createGameServices(): GameServices {
   const events = new GameEventBus();
   const state = new StateController(events);
+  const random = new RandomService();
   return {
     events,
     state,
     clock: new GameClock(),
-    random: new RandomService(),
+    random,
     ledger: new CoinLedger(events, state),
     progression: new ProgressionService(),
     shop: new ShopService(),
+    blessings: new BlessingService(random),
   };
 }
 

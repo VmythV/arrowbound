@@ -4,6 +4,7 @@ import { ASSET_KEYS } from "../config/asset-manifest";
 import { COIN_HUD_ANCHOR, GAME_WIDTH, SCENE_KEYS } from "../config/game.constants";
 import type { ShopItemId } from "../config/shop.config";
 import type { ModalType } from "../state/RuntimeState";
+import { BlessingOverlay } from "../ui/BlessingOverlay";
 import { ShopModal } from "../ui/ShopModal";
 
 const BUTTON_ENABLED_COLOR = "#f8f1dc";
@@ -19,6 +20,7 @@ export class UIScene extends Phaser.Scene {
   private prevButton: Phaser.GameObjects.Text | undefined;
   private nextButton: Phaser.GameObjects.Text | undefined;
   private shopModal: ShopModal | undefined;
+  private blessingOverlay: BlessingOverlay | undefined;
   private coinCountTween: Phaser.Tweens.Tween | undefined;
   private displayedCoins = 0;
 
@@ -78,6 +80,7 @@ export class UIScene extends Phaser.Scene {
     this.prevButton = this.createButton(GAME_WIDTH - 250, 682, "上一关", "intent:go-previous-level");
     this.nextButton = this.createButton(GAME_WIDTH - 110, 682, "下一关", "intent:go-next-level");
     this.shopModal = new ShopModal(this, this.services);
+    this.blessingOverlay = new BlessingOverlay(this, this.services);
 
     this.services.events.on("game:ready", this.handleGameReady, this);
     this.services.events.on("shot:fired", this.handleShotFired, this);
@@ -88,6 +91,8 @@ export class UIScene extends Phaser.Scene {
     this.services.events.on("shop:changed", this.handleShopChanged, this);
     this.services.events.on("shop:purchased", this.handleShopPurchased, this);
     this.services.events.on("shop:purchase-failed", this.handleShopPurchaseFailed, this);
+    this.services.events.on("blessing:offer", this.handleBlessingOffer, this);
+    this.services.events.on("blessing:selected", this.handleBlessingSelected, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
 
     this.refreshLevelDisplay();
@@ -112,6 +117,20 @@ export class UIScene extends Phaser.Scene {
 
   private handleShopPurchaseFailed({ itemId }: { itemId: ShopItemId }): void {
     this.shopModal?.flashFailure(itemId);
+  }
+
+  private handleBlessingOffer({
+    candidateIds,
+    usedExtraChoice,
+  }: {
+    candidateIds: readonly string[];
+    usedExtraChoice: boolean;
+  }): void {
+    this.blessingOverlay?.show(candidateIds, usedExtraChoice);
+  }
+
+  private handleBlessingSelected(): void {
+    this.blessingOverlay?.hide();
   }
 
   private createButton(
@@ -244,10 +263,14 @@ export class UIScene extends Phaser.Scene {
     this.services?.events.off("shop:changed", this.handleShopChanged, this);
     this.services?.events.off("shop:purchased", this.handleShopPurchased, this);
     this.services?.events.off("shop:purchase-failed", this.handleShopPurchaseFailed, this);
+    this.services?.events.off("blessing:offer", this.handleBlessingOffer, this);
+    this.services?.events.off("blessing:selected", this.handleBlessingSelected, this);
     this.coinCountTween?.stop();
     this.coinCountTween = undefined;
     this.shopModal?.destroy();
     this.shopModal = undefined;
+    this.blessingOverlay?.destroy();
+    this.blessingOverlay = undefined;
     this.coinIcon = undefined;
     this.coinsText = undefined;
     this.levelText = undefined;

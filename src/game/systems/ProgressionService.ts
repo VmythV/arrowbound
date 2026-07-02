@@ -92,6 +92,18 @@ export class ProgressionService {
     return this.levels.get(levelId)?.normalCleared ?? false;
   }
 
+  getSelectedBlessingId(levelId: number): string | undefined {
+    return this.levels.get(levelId)?.selectedBlessingId;
+  }
+
+  setSelectedBlessingId(levelId: number, blessingId: string): void {
+    const data = this.levels.get(levelId);
+    if (data === undefined) {
+      throw new Error(`Cannot set blessing for unknown level ${levelId}`);
+    }
+    data.selectedBlessingId = blessingId;
+  }
+
   hasNextLevel(): boolean {
     return this.currentId < this.levelCount;
   }

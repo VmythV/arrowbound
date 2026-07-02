@@ -41,6 +41,7 @@ export const ASSET_KEYS = {
   hudPanel: "ui-hud-panel",
   modalScrim: "ui-modal-scrim",
   modalPanel: "ui-modal-panel",
+  blessingCard: "ui-blessing-card",
   missDust: "effect-miss-dust",
   hitSpark: "effect-hit-spark",
 } as const;
@@ -66,6 +67,7 @@ export const VISUAL_ASSETS: readonly VisualAssetDefinition[] = [
   asset(ASSET_KEYS.hudPanel, "ui/hud-panel.svg", 1240, 72, "ui"),
   asset(ASSET_KEYS.modalScrim, "ui/modal-scrim.svg", 1280, 720, "ui"),
   asset(ASSET_KEYS.modalPanel, "ui/modal-panel.svg", 960, 620, "ui"),
+  asset(ASSET_KEYS.blessingCard, "ui/blessing-card.svg", 220, 300, "ui"),
   asset(ASSET_KEYS.missDust, "effects/miss-dust.svg", 96, 48, "effects"),
   asset(ASSET_KEYS.hitSpark, "effects/hit-spark.svg", 96, 96, "effects"),
 ] as const;

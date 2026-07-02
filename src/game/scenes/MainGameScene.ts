@@ -17,6 +17,7 @@ import { type LevelConfig } from "../config/level.config";
 import type { ShopItemId } from "../config/shop.config";
 import { Bow } from "../entities/Bow";
 import { Player } from "../entities/Player";
+import { resolveBlessingEffects, type BlessingEffects } from "../systems/blessing-effects";
 import { CoinDropSystem } from "../systems/CoinDropSystem";
 import { computeCoinValue, type CoinIncomeContext } from "../systems/coin-income";
 import { ProjectileSystem, type ProjectileResolution } from "../systems/ProjectileSystem";
@@ -39,6 +40,7 @@ export class MainGameScene extends Phaser.Scene {
   private level: LevelConfig | undefined;
   private spaceKey: Phaser.Input.Keyboard.Key | undefined;
   private switching = false;
+  private bowSpeedMultiplier = 1;
 
   constructor() {
     super(SCENE_KEYS.mainGame);
@@ -99,7 +101,7 @@ export class MainGameScene extends Phaser.Scene {
       GROUND_Y,
       GAME_WIDTH,
     );
-    this.coinIncome = this.buildCoinIncome();
+    this.coinIncome = this.buildCoinIncome(level);
     const ledger = this.services.ledger;
     this.coins = new CoinDropSystem(this, {
       poolTexture: ASSET_KEYS.coinBasic,
@@ -107,6 +109,8 @@ export class MainGameScene extends Phaser.Scene {
       groundY: GROUND_Y,
       onCollect: (input) => ledger.collectCoin(input),
     });
+    // 已选祝福的关卡在建好系统后立即应用冷却与弓速修正。
+    this.applyModifiers();
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
     const keyboard = this.input.keyboard;
@@ -120,6 +124,7 @@ export class MainGameScene extends Phaser.Scene {
     this.services.events.on("intent:open-shop", this.handleOpenShop, this);
     this.services.events.on("intent:close-modal", this.handleCloseModal, this);
     this.services.events.on("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
+    this.services.events.on("intent:select-blessing", this.handleSelectBlessing, this);
     this.services.events.on("shop:changed", this.handleShopChanged, this);
 
     if (!this.scene.isActive(SCENE_KEYS.ui)) {
@@ -165,47 +170,58 @@ export class MainGameScene extends Phaser.Scene {
     this.projectiles?.setAnimationsPaused(isPaused);
     this.shotFeedback?.setPaused(isPaused);
     this.coins?.setPaused(isPaused);
-    bow.setAngle(shooting.update(delta));
+    bow.setAngle(shooting.update(delta, this.bowSpeedMultiplier));
     if (!isPaused) {
       this.projectiles?.update(delta);
     }
   }
 
+  private currentBlessingEffects(level: LevelConfig): BlessingEffects {
+    return resolveBlessingEffects(this.services?.progression.getSelectedBlessingId(level.id));
+  }
+
   private buildRingScoring(level: LevelConfig): RingScoringConfig {
-    // 祝福倍率由阶段 6 接入，当前仅叠加精准瞄准商店加成。
+    const blessing = this.currentBlessingEffects(level);
     return {
       baseTargetRadius: level.target.radius,
       centerRingRatio: level.target.centerRingRatio,
       preciseAimLevel: this.services?.shop.preciseAimLevel ?? 0,
-      centerBlessingMultiplier: 1,
-      wideTargetMultiplier: 1,
+      centerBlessingMultiplier: blessing.centerRadiusMultiplier,
+      wideTargetMultiplier: blessing.targetRadiusMultiplier,
     };
   }
 
-  private buildCoinIncome(): CoinIncomeContext {
-    // 金币祝福由阶段 6 接入，当前仅叠加贪婪金币与机械贪婪商店等级。
+  private buildCoinIncome(level: LevelConfig): CoinIncomeContext {
     const shop = this.services?.shop;
+    const blessing = this.currentBlessingEffects(level);
     return {
       greedyCoinLevel: shop?.greedyCoinLevel ?? 0,
       robotGreedLevel: shop?.robotGreedLevel ?? 0,
-      allCoinMultiplier: 1,
-      tenRingMultiplier: 1,
+      allCoinMultiplier: blessing.allCoinMultiplier,
+      tenRingMultiplier: blessing.tenRingMultiplier,
     };
   }
 
-  private applyShopEffects(): void {
+  /**
+   * 依据当前商店等级与本关祝福重算环数评分、金币收益、射箭冷却与弓速。
+   */
+  private applyModifiers(): void {
     const services = this.services;
     const level = this.level;
     if (services === undefined || level === undefined) {
       return;
     }
+    const blessing = this.currentBlessingEffects(level);
     this.projectiles?.setTargetScoring(this.buildRingScoring(level));
-    this.coinIncome = this.buildCoinIncome();
-    this.shooting?.setShotCooldownSeconds(services.shop.shotCooldownSeconds());
+    this.coinIncome = this.buildCoinIncome(level);
+    this.shooting?.setShotCooldownSeconds(
+      services.shop.shotCooldownSeconds() * blessing.cooldownMultiplier,
+    );
+    this.bowSpeedMultiplier = blessing.bowSpeedMultiplier;
   }
 
   private readonly handleShopChanged = (): void => {
-    this.applyShopEffects();
+    this.applyModifiers();
   };
 
   private handleIntroComplete(): void {
@@ -217,6 +233,35 @@ export class MainGameScene extends Phaser.Scene {
     if (this.target !== undefined) {
       this.shotFeedback?.attachTarget(this.target);
     }
+    if (services.progression.getSelectedBlessingId(level.id) === undefined) {
+      this.beginBlessingSelection(level);
+      return;
+    }
+    this.enterPlaying(level);
+  }
+
+  private beginBlessingSelection(level: LevelConfig): void {
+    const services = this.services;
+    if (services === undefined) {
+      return;
+    }
+    const draw = services.blessings.drawCandidates({
+      hasRobot: services.shop.robotCount() > 0,
+      hasCoinPet: services.shop.coinPetLevel > 0,
+    });
+    services.state.transitionTo("blessing_select");
+    services.events.emit("blessing:offer", {
+      levelId: level.id,
+      candidateIds: draw.candidates.map((candidate) => candidate.id),
+      usedExtraChoice: draw.usedExtraChoice,
+    });
+  }
+
+  private enterPlaying(level: LevelConfig): void {
+    const services = this.services;
+    if (services === undefined) {
+      return;
+    }
     services.state.transitionTo("playing");
     services.events.emit("level:changed", {
       levelId: level.id,
@@ -225,6 +270,21 @@ export class MainGameScene extends Phaser.Scene {
     });
     services.events.emit("game:ready", { levelId: level.id });
   }
+
+  private readonly handleSelectBlessing = ({ blessingId }: { blessingId: string }): void => {
+    const services = this.services;
+    const level = this.level;
+    if (services === undefined || level === undefined) {
+      return;
+    }
+    if (services.state.snapshot.phase !== "blessing_select") {
+      return;
+    }
+    services.progression.setSelectedBlessingId(level.id, blessingId);
+    this.applyModifiers();
+    services.events.emit("blessing:selected", { levelId: level.id, blessingId });
+    this.enterPlaying(level);
+  };
 
   private handlePointerDown(pointer: Phaser.Input.Pointer): void {
     if (!pointer.leftButtonDown()) {
@@ -307,7 +367,7 @@ export class MainGameScene extends Phaser.Scene {
       services.events.emit("shop:purchase-failed", { itemId, reason: result.status });
       return;
     }
-    this.applyShopEffects();
+    this.applyModifiers();
     services.events.emit("shop:purchased", {
       itemId,
       level: result.level,
@@ -396,6 +456,7 @@ export class MainGameScene extends Phaser.Scene {
     this.services?.events.off("intent:open-shop", this.handleOpenShop, this);
     this.services?.events.off("intent:close-modal", this.handleCloseModal, this);
     this.services?.events.off("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
+    this.services?.events.off("intent:select-blessing", this.handleSelectBlessing, this);
     this.services?.events.off("shop:changed", this.handleShopChanged, this);
     this.shotFeedback?.destroy();
     this.projectiles?.destroy();

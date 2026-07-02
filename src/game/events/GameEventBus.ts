@@ -22,6 +22,9 @@ export type GameEventMap = {
   "shop:changed": Record<string, never>;
   "shop:purchased": { itemId: ShopItemId; level: number; newlyUnlocked: readonly ShopItemId[] };
   "shop:purchase-failed": { itemId: ShopItemId; reason: "locked" | "maxed" | "insufficient" };
+  "blessing:offer": { levelId: number; candidateIds: readonly string[]; usedExtraChoice: boolean };
+  "blessing:selected": { levelId: number; blessingId: string };
+  "intent:select-blessing": { blessingId: string };
   "phase:changed": { previous: GamePhase; current: GamePhase; state: Readonly<RuntimeState> };
   "modal:changed": { modal: ModalType; state: Readonly<RuntimeState> };
   "state:changed": { state: Readonly<RuntimeState> };
