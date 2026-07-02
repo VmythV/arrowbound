@@ -156,6 +156,7 @@ export class MainGameScene extends Phaser.Scene {
     this.services.events.on("intent:go-previous-level", this.handleGoPreviousLevel, this);
     this.services.events.on("intent:open-shop", this.handleOpenShop, this);
     this.services.events.on("intent:open-settings", this.handleOpenSettings, this);
+    this.services.events.on("intent:reset-save", this.handleResetSave, this);
     this.services.events.on("intent:close-modal", this.handleCloseModal, this);
     this.services.events.on("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
     this.services.events.on("intent:select-blessing", this.handleSelectBlessing, this);
@@ -331,6 +332,10 @@ export class MainGameScene extends Phaser.Scene {
       clearCoinGoal: level.clearCoinGoal,
     });
     services.events.emit("game:ready", { levelId: level.id });
+    // 启动时若存档中有未领取奖励，优先按队列恢复奖励弹窗，不重新抽奖。
+    if (services.rewards.pending.length > 0) {
+      this.beginRewardPhase();
+    }
   }
 
   private readonly handleSelectBlessing = ({ blessingId }: { blessingId: string }): void => {
@@ -564,6 +569,11 @@ export class MainGameScene extends Phaser.Scene {
     this.services?.state.closeModal();
   };
 
+  private readonly handleResetSave = (): void => {
+    this.services?.repository.clear();
+    globalThis.location.reload();
+  };
+
   private readonly handlePurchaseShopItem = ({ itemId }: { itemId: ShopItemId }): void => {
     const services = this.services;
     if (services === undefined || services.state.snapshot.activeModal !== "shop") {
@@ -669,6 +679,7 @@ export class MainGameScene extends Phaser.Scene {
     this.services?.events.off("intent:go-previous-level", this.handleGoPreviousLevel, this);
     this.services?.events.off("intent:open-shop", this.handleOpenShop, this);
     this.services?.events.off("intent:open-settings", this.handleOpenSettings, this);
+    this.services?.events.off("intent:reset-save", this.handleResetSave, this);
     this.services?.events.off("intent:close-modal", this.handleCloseModal, this);
     this.services?.events.off("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
     this.services?.events.off("intent:select-blessing", this.handleSelectBlessing, this);

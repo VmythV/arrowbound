@@ -68,6 +68,17 @@ export class ProgressionService {
     return this.currentId;
   }
 
+  /**
+   * 导出进度相关的存档片段：当前关、已解锁上限与每关状态。
+   */
+  toSaveData(): { currentLevel: number; maxUnlockedLevel: number; levels: Record<number, LevelSaveData> } {
+    const levels: Record<number, LevelSaveData> = {};
+    for (const [id, data] of this.levels) {
+      levels[id] = { ...data };
+    }
+    return { currentLevel: this.currentId, maxUnlockedLevel: this.maxUnlockedId, levels };
+  }
+
   get maxUnlockedLevelId(): number {
     return this.maxUnlockedId;
   }

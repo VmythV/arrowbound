@@ -26,7 +26,14 @@ export class RewardService {
   constructor(
     private readonly random: RandomService,
     private readonly events: GameEventBus,
-  ) {}
+    initialPending: readonly PendingReward[] = [],
+  ) {
+    for (const reward of initialPending) {
+      if (!this.queue.some((pending) => pending.id === reward.id)) {
+        this.queue.push({ ...reward });
+      }
+    }
+  }
 
   get pending(): readonly PendingReward[] {
     return this.queue;

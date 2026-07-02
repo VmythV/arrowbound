@@ -38,12 +38,26 @@ export class SettingsModal {
       })
       .setOrigin(0.5);
     const hint = scene.add
-      .text(PANEL_X, PANEL_Y - 30, "游戏已暂停", {
+      .text(PANEL_X, PANEL_Y - 60, "游戏已暂停", {
         color: "#d7e0e6",
         fontFamily: BODY_FONT,
         fontSize: "20px",
       })
       .setOrigin(0.5);
+    const resetButton = scene.add
+      .text(PANEL_X, PANEL_Y + 40, "清除存档并重新开始", {
+        color: "#f3d7cf",
+        fontFamily: BODY_FONT,
+        fontSize: "20px",
+        fontStyle: "bold",
+        backgroundColor: "#7a3b35",
+        padding: { x: 20, y: 10 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    resetButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+      this.services.events.emit("intent:reset-save", {});
+    });
     const closeButton = scene.add
       .text(1050, PANEL_Y - 278, "关闭", {
         color: "#f8f1dc",
@@ -58,7 +72,7 @@ export class SettingsModal {
     closeButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
       this.services.events.emit("intent:close-modal", {});
     });
-    this.container.add([panel, title, hint, closeButton]);
+    this.container.add([panel, title, hint, resetButton, closeButton]);
   }
 
   get isOpen(): boolean {

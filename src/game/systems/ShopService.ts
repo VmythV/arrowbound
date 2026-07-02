@@ -108,6 +108,21 @@ export class ShopService {
     return this.levels[itemId];
   }
 
+  /**
+   * 导出各商品等级的存档片段。
+   */
+  toSaveData(): ShopSaveData {
+    return {
+      preciseAimLevel: this.levels.precise_aim,
+      greedyCoinLevel: this.levels.greedy_coin,
+      quickDrawLevel: this.levels.quick_draw,
+      robotArcherLevel: this.levels.robot_archer,
+      robotRapidFireLevel: this.levels.robot_rapid_fire,
+      robotGreedLevel: this.levels.robot_greed,
+      coinPetLevel: this.levels.coin_pet,
+    };
+  }
+
   maxLevel(itemId: ShopItemId): number {
     return this.configFor(itemId).maxLevel;
   }

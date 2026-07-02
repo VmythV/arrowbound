@@ -18,6 +18,7 @@ export type GameEventMap = {
   "intent:go-previous-level": Record<string, never>;
   "intent:open-shop": Record<string, never>;
   "intent:open-settings": Record<string, never>;
+  "intent:reset-save": Record<string, never>;
   "intent:close-modal": Record<string, never>;
   "intent:purchase-shop-item": { itemId: ShopItemId };
   "shop:changed": Record<string, never>;
