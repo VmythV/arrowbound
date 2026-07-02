@@ -7,6 +7,7 @@ import {
   type SaveData,
 } from "../state/SaveData";
 import type { ShopItemId } from "../config/shop.config";
+import { MAX_LEVEL_ID } from "../config/game.constants";
 
 const SHOP_KEYS: readonly (keyof SaveData["shop"])[] = [
   "preciseAimLevel",
@@ -120,7 +121,8 @@ export function migrateAndNormalize(raw: unknown): SaveData {
     for (const [id, rawEntry] of Object.entries(levels)) {
       const levelId = Number(id);
       const entry = asRecord(rawEntry);
-      if (!Number.isInteger(levelId) || base.levels[levelId] === undefined || entry === undefined) {
+      // 关卡近似无限：接受任意合法 id 的关卡条目，不再限制于默认存档已有的关卡。
+      if (!Number.isInteger(levelId) || levelId < 1 || levelId > MAX_LEVEL_ID || entry === undefined) {
         continue;
       }
       const selectedBlessingId = entry["selectedBlessingId"];

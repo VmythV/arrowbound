@@ -13,6 +13,12 @@ export type ShopUnlockCondition =
   | { readonly type: "any"; readonly conditions: readonly ShopUnlockCondition[] }
   | { readonly type: "cleared_level"; readonly levelId: number };
 
+/**
+ * 无限流解封道具的工程封顶等级：足够高以近似“无上限”，同时避免病态无界。
+ * 与关卡上限保持一致语义（见 docs/05 §6）。
+ */
+export const MAX_SHOP_LEVEL = 9999;
+
 export type ShopItemConfig = {
   readonly id: ShopItemId;
   readonly name: string;
@@ -39,7 +45,8 @@ export const SHOP_CONFIGS: readonly ShopItemConfig[] = [
     description: "每级使手动金币倍率增加百分之十",
     baseCost: 40,
     costMultiplier: 1.25,
-    maxLevel: 20,
+    // 无限流纯乘法收益道具，解封至工程上限（见 docs/05 §6）。
+    maxLevel: MAX_SHOP_LEVEL,
     unlockCondition: { type: "always" },
   },
   {
@@ -75,7 +82,8 @@ export const SHOP_CONFIGS: readonly ShopItemConfig[] = [
     description: "提高机器人金币倍率",
     baseCost: 160,
     costMultiplier: 1.32,
-    maxLevel: 20,
+    // 无限流纯乘法收益道具，解封至工程上限（见 docs/05 §6）。
+    maxLevel: MAX_SHOP_LEVEL,
     unlockCondition: { type: "item_level", itemId: "robot_archer", level: 5 },
   },
   {

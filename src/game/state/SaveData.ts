@@ -1,5 +1,4 @@
 import { INITIAL_PLAYER_COINS } from "../config/game.constants";
-import { LEVEL_CONFIGS } from "../config/level.config";
 import type { ShopItemId } from "../config/shop.config";
 
 export const CURRENT_SAVE_VERSION = 1;
@@ -65,18 +64,16 @@ export type SaveData = {
 };
 
 export function createDefaultSaveData(): SaveData {
-  const levels = Object.fromEntries(
-    LEVEL_CONFIGS.map((level) => [
-      level.id,
-      {
-        unlocked: level.id === 1,
-        normalCleared: false,
-        challengeCompleted: false,
-        challengeChestClaimed: false,
-        luckyFirstTenRewardClaimed: false,
-      } satisfies LevelSaveData,
-    ]),
-  ) as Record<number, LevelSaveData>;
+  // 关卡近似无限：默认只种下第 1 关，其余关卡在到达时由进度服务惰性创建。
+  const levels: Record<number, LevelSaveData> = {
+    1: {
+      unlocked: true,
+      normalCleared: false,
+      challengeCompleted: false,
+      challengeChestClaimed: false,
+      luckyFirstTenRewardClaimed: false,
+    },
+  };
 
   return {
     version: CURRENT_SAVE_VERSION,

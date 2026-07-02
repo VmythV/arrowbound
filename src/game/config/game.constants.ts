@@ -15,6 +15,11 @@ export const MAX_ROBOTS = 5;
 export const MAX_COIN_PETS = 1;
 export const CENTER_RING_RATIO_CAP = 0.3;
 export const CHALLENGE_DURATION_SECONDS = 60;
+/**
+ * 关卡近似无限：前 10 关手工配置，第 11 关起程序化生成。
+ * 保留一个有限上限，避免存档与数值出现病态无界状态（见 docs/05 §4.1）。
+ */
+export const MAX_LEVEL_ID = 9999;
 
 export const SCENE_KEYS = {
   boot: "BootScene",

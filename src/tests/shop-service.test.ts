@@ -134,3 +134,24 @@ describe("ShopService effect readers", () => {
     expect(shop.robotCoinMultiplier()).toBeCloseTo(0.98, 10);
   });
 });
+
+describe("uncapped infinite-flow income items", () => {
+  it("does not cap greedy_coin or robot_greed at 20", () => {
+    // 无限流：纯乘法收益道具解封，高等级仍未满级且价格继续增长。
+    const shop = shopWith({ greedyCoinLevel: 50, robotGreedLevel: 50 });
+    expect(shop.getLevel("greedy_coin")).toBe(50);
+    expect(shop.isMaxed("greedy_coin")).toBe(false);
+    expect(shop.getLevel("robot_greed")).toBe(50);
+    expect(shop.isMaxed("robot_greed")).toBe(false);
+    expect(shop.getCost("greedy_coin")).toBeGreaterThan(0);
+    expect(shop.getCost("robot_greed")).toBeGreaterThan(0);
+  });
+
+  it("still caps the invariant-bound items", () => {
+    const shop = shopWith({ preciseAimLevel: 999, robotRapidFireLevel: 999, coinPetLevel: 999 });
+    expect(shop.getLevel("precise_aim")).toBe(20);
+    expect(shop.getLevel("robot_rapid_fire")).toBe(20);
+    expect(shop.getLevel("coin_pet")).toBe(30);
+    expect(shop.isMaxed("precise_aim")).toBe(true);
+  });
+});
