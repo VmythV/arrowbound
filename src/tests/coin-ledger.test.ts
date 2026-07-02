@@ -26,7 +26,7 @@ function createChallenge(
 }
 
 describe("CoinLedger", () => {
-  it("adds coin value to the wallet and cumulative total, emitting once", () => {
+  it("adds coin value to the wallet and cumulative total, emitting collect and wallet events", () => {
     const log: EmittedEvent[] = [];
     const ledger = new CoinLedger(createEventSink(log), createChallenge({ isChallengeActive: false }));
 
@@ -36,6 +36,7 @@ describe("CoinLedger", () => {
     expect(ledger.totalCoinsEarned).toBe(5);
     expect(log).toEqual([
       { event: "coin:collected", payload: { value: 5, coins: 5, source: "player" } },
+      { event: "wallet:changed", payload: { coins: 5, delta: 5, reason: "collect" } },
     ]);
   });
 
@@ -47,7 +48,28 @@ describe("CoinLedger", () => {
     expect(ledger.collectCoin({ id: 7, value: 4, source: "player" })).toBe(false);
 
     expect(ledger.coins).toBe(4);
-    expect(log).toHaveLength(1);
+    expect(log.filter((entry) => entry.event === "coin:collected")).toHaveLength(1);
+  });
+
+  it("spends from the wallet only when the balance is sufficient", () => {
+    const log: EmittedEvent[] = [];
+    const ledger = new CoinLedger(
+      createEventSink(log),
+      createChallenge({ isChallengeActive: false }),
+      50,
+      50,
+    );
+
+    expect(ledger.spend(30)).toBe(true);
+    expect(ledger.coins).toBe(20);
+    expect(ledger.spend(25)).toBe(false);
+    expect(ledger.coins).toBe(20);
+    expect(ledger.totalCoinsEarned).toBe(50);
+    expect(log).toContainEqual({
+      event: "wallet:changed",
+      payload: { coins: 20, delta: -30, reason: "spend" },
+    });
+    expect(() => ledger.spend(-1)).toThrow(RangeError);
   });
 
   it("adds challenge score only when the run id matches an active challenge", () => {

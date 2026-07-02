@@ -11,6 +11,10 @@ export type GameEventMap = {
   "shot:fired": { angle: number };
   "arrow:resolved": ProjectileResolution;
   "coin:collected": { value: number; coins: number; source: CoinSource; point?: Point };
+  "wallet:changed": { coins: number; delta: number; reason: "collect" | "spend" | "reward" };
+  "level:changed": { levelId: number; normalCleared: boolean; clearCoinGoal: number };
+  "intent:go-next-level": Record<string, never>;
+  "intent:go-previous-level": Record<string, never>;
   "phase:changed": { previous: GamePhase; current: GamePhase; state: Readonly<RuntimeState> };
   "modal:changed": { modal: ModalType; state: Readonly<RuntimeState> };
   "state:changed": { state: Readonly<RuntimeState> };

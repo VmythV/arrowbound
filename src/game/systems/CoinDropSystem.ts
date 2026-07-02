@@ -104,6 +104,28 @@ export class CoinDropSystem {
     coin.playPickup(this.config.hudAnchor, () => this.recycle(coin));
   }
 
+  /**
+   * 关卡切换时将场上未拾取金币全部收入钱包（经统一入账入口，不含拾取动画），
+   * 已锁定或已入账的金币不会重复计入。
+   */
+  drainToWallet(): void {
+    for (const child of this.pool.getChildren()) {
+      const coin = child as Coin;
+      if (!coin.active || !coin.lockForPickup()) {
+        continue;
+      }
+      const input: CoinCollectionInput = {
+        id: coin.id,
+        value: coin.value,
+        source: coin.source,
+        point: { x: coin.x, y: coin.y },
+        ...(coin.challengeRunId !== undefined ? { challengeRunId: coin.challengeRunId } : {}),
+      };
+      this.config.onCollect(input);
+      this.recycle(coin);
+    }
+  }
+
   setPaused(paused: boolean): void {
     if (paused === this.paused) {
       return;

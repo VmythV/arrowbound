@@ -2,6 +2,7 @@ import { GameEventBus } from "./events/GameEventBus";
 import { StateController } from "./state/StateController";
 import { CoinLedger } from "./systems/CoinLedger";
 import { GameClock } from "./systems/GameClock";
+import { ProgressionService } from "./systems/ProgressionService";
 import { RandomService } from "./utils/random";
 
 export const GAME_SERVICES_REGISTRY_KEY = "arrowbound:services";
@@ -12,6 +13,7 @@ export type GameServices = {
   readonly clock: GameClock;
   readonly random: RandomService;
   readonly ledger: CoinLedger;
+  readonly progression: ProgressionService;
 };
 
 export function createGameServices(): GameServices {
@@ -23,6 +25,7 @@ export function createGameServices(): GameServices {
     clock: new GameClock(),
     random: new RandomService(),
     ledger: new CoinLedger(events, state),
+    progression: new ProgressionService(),
   };
 }
 

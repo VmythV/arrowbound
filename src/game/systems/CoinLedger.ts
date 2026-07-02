@@ -86,6 +86,25 @@ export class CoinLedger {
       payload.point = input.point;
     }
     this.events.emit("coin:collected", payload);
+    this.events.emit("wallet:changed", { coins: this.balance, delta: input.value, reason: "collect" });
+    return true;
+  }
+
+  /**
+   * 从钱包扣除金币，余额不足时返回 false 且不改动余额（供普通通关等一次性支出使用）。
+   */
+  spend(amount: number): boolean {
+    if (!Number.isInteger(amount) || amount < 0) {
+      throw new RangeError("Spend amount must be a non-negative integer");
+    }
+    if (amount === 0) {
+      return true;
+    }
+    if (this.balance < amount) {
+      return false;
+    }
+    this.balance -= amount;
+    this.events.emit("wallet:changed", { coins: this.balance, delta: -amount, reason: "spend" });
     return true;
   }
 

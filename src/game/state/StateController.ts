@@ -100,6 +100,17 @@ export class StateController {
     return true;
   }
 
+  setCurrentLevel(levelId: number): void {
+    if (!Number.isInteger(levelId) || levelId <= 0) {
+      throw new RangeError("Level id must be a positive integer");
+    }
+    if (this.state.currentLevelId === levelId) {
+      return;
+    }
+    this.state.currentLevelId = levelId;
+    this.emitStateChanged();
+  }
+
   addChallengeScore(value: number): void {
     if (!Number.isFinite(value) || value < 0) {
       throw new RangeError("Challenge score increment must be finite and non-negative");

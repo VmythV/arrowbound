@@ -9,10 +9,12 @@ import {
   GROUND_Y,
   INITIAL_SHOT_COOLDOWN_SECONDS,
   MINIMUM_SHOT_COOLDOWN_SECONDS,
+  PLAY_AREA_BOTTOM,
+  PLAY_AREA_TOP,
   PLAYER_POSITION,
   SCENE_KEYS,
 } from "../config/game.constants";
-import { LEVEL_CONFIGS, type LevelConfig } from "../config/level.config";
+import { type LevelConfig } from "../config/level.config";
 import { Bow } from "../entities/Bow";
 import { Player } from "../entities/Player";
 import { CoinDropSystem } from "../systems/CoinDropSystem";
@@ -36,18 +38,18 @@ export class MainGameScene extends Phaser.Scene {
   private target: Phaser.GameObjects.Image | undefined;
   private level: LevelConfig | undefined;
   private spaceKey: Phaser.Input.Keyboard.Key | undefined;
+  private switching = false;
 
   constructor() {
     super(SCENE_KEYS.mainGame);
   }
 
   create(): void {
+    this.switching = false;
     this.services = getGameServices(this.registry);
-    const level = LEVEL_CONFIGS[0];
-    if (level === undefined) {
-      throw new Error("The first level configuration is missing");
-    }
+    const level = this.services.progression.currentConfig;
     this.level = level;
+    this.services.state.setCurrentLevel(level.id);
 
     const background = this.add
       .image(GAME_WIDTH / 2, GAME_HEIGHT / 2, ASSET_KEYS.meadowBackground)
@@ -113,8 +115,12 @@ export class MainGameScene extends Phaser.Scene {
       this.spaceKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
       this.spaceKey.on("down", this.handleShootIntent, this);
     }
+    this.services.events.on("intent:go-next-level", this.handleGoNextLevel, this);
+    this.services.events.on("intent:go-previous-level", this.handleGoPreviousLevel, this);
 
-    this.scene.launch(SCENE_KEYS.ui);
+    if (!this.scene.isActive(SCENE_KEYS.ui)) {
+      this.scene.launch(SCENE_KEYS.ui);
+    }
     this.cameras.main.fadeIn(300, 23, 37, 59);
     this.tweens.add({
       targets: background,
@@ -184,20 +190,89 @@ export class MainGameScene extends Phaser.Scene {
 
   private handleIntroComplete(): void {
     const services = this.services;
-    if (services === undefined) {
+    const level = this.level;
+    if (services === undefined || level === undefined) {
       return;
     }
     if (this.target !== undefined) {
       this.shotFeedback?.attachTarget(this.target);
     }
     services.state.transitionTo("playing");
-    services.events.emit("game:ready", { levelId: services.state.snapshot.currentLevelId });
+    services.events.emit("level:changed", {
+      levelId: level.id,
+      normalCleared: services.progression.isNormalCleared(level.id),
+      clearCoinGoal: level.clearCoinGoal,
+    });
+    services.events.emit("game:ready", { levelId: level.id });
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer): void {
-    if (pointer.leftButtonDown()) {
-      this.handleShootIntent();
+    if (!pointer.leftButtonDown()) {
+      return;
     }
+    // 只有主游戏有效区域内的点击射箭，避开顶部 HUD 与底部按钮栏。
+    if (pointer.y < PLAY_AREA_TOP || pointer.y > PLAY_AREA_BOTTOM) {
+      return;
+    }
+    this.handleShootIntent();
+  }
+
+  private readonly handleGoNextLevel = (): void => {
+    const services = this.services;
+    if (services === undefined || this.switching) {
+      return;
+    }
+    const snapshot = services.state.snapshot;
+    if (snapshot.phase !== "playing" || snapshot.activeModal !== null) {
+      return;
+    }
+    const progression = services.progression;
+    const current = progression.currentConfig;
+    if (!progression.hasNextLevel()) {
+      return;
+    }
+    if (!progression.isNormalCleared(current.id)) {
+      // 扣费、通关标记与解锁作为一次原子操作；余额不足则不做任何改动。
+      if (!services.ledger.spend(current.clearCoinGoal)) {
+        return;
+      }
+      progression.clearLevelAndUnlockNext(current.id);
+    }
+    this.transitionToLevel(current.id + 1);
+  };
+
+  private readonly handleGoPreviousLevel = (): void => {
+    const services = this.services;
+    if (services === undefined || this.switching) {
+      return;
+    }
+    const snapshot = services.state.snapshot;
+    if (snapshot.phase !== "playing" || snapshot.activeModal !== null) {
+      return;
+    }
+    const progression = services.progression;
+    if (!progression.hasPreviousLevel()) {
+      return;
+    }
+    this.transitionToLevel(progression.currentConfig.id - 1);
+  };
+
+  private transitionToLevel(targetLevelId: number): void {
+    const services = this.services;
+    if (services === undefined || this.switching) {
+      return;
+    }
+    this.switching = true;
+    services.state.transitionTo("level_transition");
+    // 停止射箭输入并回收全部箭矢，未拾取金币自动收入钱包（不计入挑战）。
+    this.projectiles?.releaseAll();
+    this.coins?.drainToWallet();
+    services.progression.setCurrentLevel(targetLevelId);
+    services.state.setCurrentLevel(targetLevelId);
+    this.cameras.main.fadeOut(260, 23, 37, 59);
+    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+      this.scene.restart();
+    });
   }
 
   private handleShootIntent(): void {
@@ -257,9 +332,12 @@ export class MainGameScene extends Phaser.Scene {
   private handleShutdown(): void {
     this.input.off(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
     this.spaceKey?.off("down", this.handleShootIntent, this);
+    this.services?.events.off("intent:go-next-level", this.handleGoNextLevel, this);
+    this.services?.events.off("intent:go-previous-level", this.handleGoPreviousLevel, this);
     this.shotFeedback?.destroy();
     this.projectiles?.destroy();
-    this.coins?.releaseAll();
+    // 关卡切换时金币已在 transitionToLevel 入账；此处只销毁对象池，
+    // 场景卸载会一并清理金币的文字与光圈子对象。
     this.coins?.destroy();
     this.services?.ledger.resetLevelTracking();
     this.services?.clock.clear();
