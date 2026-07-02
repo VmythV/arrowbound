@@ -126,6 +126,45 @@ export class CoinDropSystem {
     }
   }
 
+  /**
+   * 当前可被拾取的金币（活跃且未被其他流程锁定），供宠物寻找最近目标。
+   */
+  getCollectableCoins(): Coin[] {
+    const result: Coin[] = [];
+    for (const child of this.pool.getChildren()) {
+      const coin = child as Coin;
+      if (coin.active && !coin.isLocked) {
+        result.push(coin);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * 宠物选中目标后先锁定金币，避免鼠标或其他宠物流程重复拾取。返回是否成功预定。
+   */
+  reserve(coin: Coin): boolean {
+    return coin.lockForPickup();
+  }
+
+  /**
+   * 结算一枚已被宠物预定（锁定）的金币：经统一入账入口计入，然后回收。
+   */
+  accountReserved(coin: Coin): void {
+    if (!coin.active) {
+      return;
+    }
+    const input: CoinCollectionInput = {
+      id: coin.id,
+      value: coin.value,
+      source: coin.source,
+      point: { x: coin.x, y: coin.y },
+      ...(coin.challengeRunId !== undefined ? { challengeRunId: coin.challengeRunId } : {}),
+    };
+    this.config.onCollect(input);
+    this.recycle(coin);
+  }
+
   setPaused(paused: boolean): void {
     if (paused === this.paused) {
       return;

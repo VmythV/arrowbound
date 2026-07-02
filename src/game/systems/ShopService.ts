@@ -43,6 +43,31 @@ export function robotCountForLevel(level: number): number {
 }
 
 /**
+ * 金币宠物移动速度：`220 + 8 × (level - 1)` 像素/秒；未解锁（level 0）时按 1 级基线。
+ */
+export function petMoveSpeedForLevel(coinPetLevel: number): number {
+  const level = Math.max(1, coinPetLevel);
+  return 220 + 8 * (level - 1);
+}
+
+/**
+ * 金币宠物拾取间隔：`max(0.7, 2.0 - 0.10 × (level - 1))` 秒。
+ */
+export function petPickupIntervalForLevel(coinPetLevel: number): number {
+  const level = Math.max(1, coinPetLevel);
+  return Math.max(0.7, 2 - 0.1 * (level - 1));
+}
+
+/**
+ * 金币宠物单次拾取数量：1～19 级为 1，20～29 级为 2，30 级为 3。
+ */
+export function petPickupCountForLevel(coinPetLevel: number): number {
+  if (coinPetLevel >= 30) return 3;
+  if (coinPetLevel >= 20) return 2;
+  return 1;
+}
+
+/**
  * 快速拉弓后的射箭冷却，受 0.35 秒下限约束。
  */
 export function shotCooldownForLevel(quickDrawLevel: number): number {
@@ -186,6 +211,22 @@ export class ShopService {
 
   robotCoinMultiplier(): number {
     return ROBOT_BASE_MULTIPLIER * (1 + ROBOT_GREED_PER_LEVEL * this.levels.robot_greed);
+  }
+
+  hasCoinPet(): boolean {
+    return this.levels.coin_pet >= 1;
+  }
+
+  petMoveSpeed(): number {
+    return petMoveSpeedForLevel(this.levels.coin_pet);
+  }
+
+  petPickupIntervalSeconds(): number {
+    return petPickupIntervalForLevel(this.levels.coin_pet);
+  }
+
+  petPickupCount(): number {
+    return petPickupCountForLevel(this.levels.coin_pet);
   }
 
   /**

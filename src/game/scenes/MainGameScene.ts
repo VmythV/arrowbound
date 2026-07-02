@@ -23,6 +23,7 @@ import { Player } from "../entities/Player";
 import { resolveBlessingEffects, type BlessingEffects } from "../systems/blessing-effects";
 import { CoinDropSystem } from "../systems/CoinDropSystem";
 import { computeCoinValue, type CoinIncomeContext } from "../systems/coin-income";
+import { PetSystem } from "../systems/PetSystem";
 import { ProjectileSystem, type ProjectileResolution } from "../systems/ProjectileSystem";
 import { RobotSystem } from "../systems/RobotSystem";
 import type { RingScoringConfig } from "../systems/ring-scoring";
@@ -40,6 +41,7 @@ export class MainGameScene extends Phaser.Scene {
   private shotFeedback: ShotFeedbackSystem | undefined;
   private coins: CoinDropSystem | undefined;
   private robots: RobotSystem | undefined;
+  private pets: PetSystem | undefined;
   private coinIncome: CoinIncomeContext | undefined;
   private target: Phaser.GameObjects.Image | undefined;
   private level: LevelConfig | undefined;
@@ -128,7 +130,19 @@ export class MainGameScene extends Phaser.Scene {
       getRingScoring: () => this.buildRingScoring(level),
       launch: (config) => this.projectiles?.launch(config),
     });
-    // 已选祝福的关卡在建好系统后立即应用冷却、弓速与机器人数量。
+    this.pets = new PetSystem(this, {
+      texture: ASSET_KEYS.petBasic,
+      homePoint: { x: 250, y: GROUND_Y - 74 },
+      getMoveSpeed: () => this.services?.shop.petMoveSpeed() ?? 220,
+      getPickupIntervalSeconds: () =>
+        (this.services?.shop.petPickupIntervalSeconds() ?? 2) /
+        this.currentBlessingEffects(level).petIntervalDivisor,
+      getPickupCount: () => this.services?.shop.petPickupCount() ?? 1,
+      getCollectableCoins: () => this.coins?.getCollectableCoins() ?? [],
+      reserve: (coin) => this.coins?.reserve(coin) ?? false,
+      account: (coin) => this.coins?.accountReserved(coin),
+    });
+    // 已选祝福的关卡在建好系统后立即应用冷却、弓速、机器人数量与宠物。
     this.applyModifiers();
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
@@ -192,10 +206,12 @@ export class MainGameScene extends Phaser.Scene {
     this.shotFeedback?.setPaused(isPaused);
     this.coins?.setPaused(isPaused);
     this.robots?.setAnimationsPaused(isPaused);
+    this.pets?.setAnimationsPaused(isPaused);
     bow.setAngle(shooting.update(delta, this.bowSpeedMultiplier));
     if (!isPaused) {
       this.projectiles?.update(delta);
       this.robots?.update(delta);
+      this.pets?.update(delta);
     }
     this.updateChallenge(delta);
   }
@@ -262,6 +278,7 @@ export class MainGameScene extends Phaser.Scene {
     );
     this.bowSpeedMultiplier = blessing.bowSpeedMultiplier;
     this.robots?.setCount(services.shop.robotCount());
+    this.pets?.setActive(services.shop.hasCoinPet());
   }
 
   private readonly handleShopChanged = (): void => {
@@ -650,6 +667,7 @@ export class MainGameScene extends Phaser.Scene {
     // 场景卸载会一并清理金币的文字与光圈子对象。
     this.coins?.destroy();
     this.robots?.destroy();
+    this.pets?.destroy();
     this.services?.ledger.resetLevelTracking();
     this.services?.clock.clear();
     this.player = undefined;
@@ -659,6 +677,7 @@ export class MainGameScene extends Phaser.Scene {
     this.shotFeedback = undefined;
     this.coins = undefined;
     this.robots = undefined;
+    this.pets = undefined;
     this.coinIncome = undefined;
     this.target = undefined;
     this.level = undefined;
