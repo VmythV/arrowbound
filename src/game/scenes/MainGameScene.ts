@@ -16,6 +16,7 @@ import {
 } from "../config/game.constants";
 import type { PendingReward } from "../state/SaveData";
 import { type LevelConfig } from "../config/level.config";
+import { ROBOT_CONFIG } from "../config/robot.config";
 import type { ShopItemId } from "../config/shop.config";
 import { Bow } from "../entities/Bow";
 import { Player } from "../entities/Player";
@@ -23,6 +24,7 @@ import { resolveBlessingEffects, type BlessingEffects } from "../systems/blessin
 import { CoinDropSystem } from "../systems/CoinDropSystem";
 import { computeCoinValue, type CoinIncomeContext } from "../systems/coin-income";
 import { ProjectileSystem, type ProjectileResolution } from "../systems/ProjectileSystem";
+import { RobotSystem } from "../systems/RobotSystem";
 import type { RingScoringConfig } from "../systems/ring-scoring";
 import { ShotFeedbackSystem } from "../systems/ShotFeedbackSystem";
 import { ShootingSystem } from "../systems/ShootingSystem";
@@ -37,6 +39,7 @@ export class MainGameScene extends Phaser.Scene {
   private projectiles: ProjectileSystem | undefined;
   private shotFeedback: ShotFeedbackSystem | undefined;
   private coins: CoinDropSystem | undefined;
+  private robots: RobotSystem | undefined;
   private coinIncome: CoinIncomeContext | undefined;
   private target: Phaser.GameObjects.Image | undefined;
   private level: LevelConfig | undefined;
@@ -57,7 +60,8 @@ export class MainGameScene extends Phaser.Scene {
 
     const background = this.add
       .image(GAME_WIDTH / 2, GAME_HEIGHT / 2, ASSET_KEYS.meadowBackground)
-      .setAlpha(0);
+      .setAlpha(0)
+      .setDepth(-10);
     this.shooting = new ShootingSystem(
       {
         bow: level.bow,
@@ -111,7 +115,20 @@ export class MainGameScene extends Phaser.Scene {
       groundY: GROUND_Y,
       onCollect: (input) => ledger.collectCoin(input),
     });
-    // 已选祝福的关卡在建好系统后立即应用冷却与弓速修正。
+    this.robots = new RobotSystem(this, this.services.random, {
+      texture: ASSET_KEYS.robotBasic,
+      groundY: GROUND_Y,
+      target: { x: level.target.x, y: level.target.y },
+      arrowSpeed: level.arrow.speed,
+      arrowGravity: level.arrow.gravity,
+      getShotIntervalSeconds: () =>
+        (this.services?.shop.robotShotIntervalSeconds() ?? ROBOT_CONFIG.baseShotIntervalSeconds) /
+        this.currentBlessingEffects(level).robotIntervalDivisor,
+      getMinimumRing: () => this.currentBlessingEffects(level).robotMinimumRing,
+      getRingScoring: () => this.buildRingScoring(level),
+      launch: (config) => this.projectiles?.launch(config),
+    });
+    // 已选祝福的关卡在建好系统后立即应用冷却、弓速与机器人数量。
     this.applyModifiers();
 
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
@@ -174,9 +191,11 @@ export class MainGameScene extends Phaser.Scene {
     this.projectiles?.setAnimationsPaused(isPaused);
     this.shotFeedback?.setPaused(isPaused);
     this.coins?.setPaused(isPaused);
+    this.robots?.setAnimationsPaused(isPaused);
     bow.setAngle(shooting.update(delta, this.bowSpeedMultiplier));
     if (!isPaused) {
       this.projectiles?.update(delta);
+      this.robots?.update(delta);
     }
     this.updateChallenge(delta);
   }
@@ -242,6 +261,7 @@ export class MainGameScene extends Phaser.Scene {
       services.shop.shotCooldownSeconds() * blessing.cooldownMultiplier,
     );
     this.bowSpeedMultiplier = blessing.bowSpeedMultiplier;
+    this.robots?.setCount(services.shop.robotCount());
   }
 
   private readonly handleShopChanged = (): void => {
@@ -629,6 +649,7 @@ export class MainGameScene extends Phaser.Scene {
     // 关卡切换时金币已在 transitionToLevel 入账；此处只销毁对象池，
     // 场景卸载会一并清理金币的文字与光圈子对象。
     this.coins?.destroy();
+    this.robots?.destroy();
     this.services?.ledger.resetLevelTracking();
     this.services?.clock.clear();
     this.player = undefined;
@@ -637,6 +658,7 @@ export class MainGameScene extends Phaser.Scene {
     this.projectiles = undefined;
     this.shotFeedback = undefined;
     this.coins = undefined;
+    this.robots = undefined;
     this.coinIncome = undefined;
     this.target = undefined;
     this.level = undefined;
