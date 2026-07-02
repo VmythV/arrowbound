@@ -3,6 +3,7 @@ import type { PendingReward, SaveData } from "../state/SaveData";
 import type { GamePhase, ModalType, RuntimeState } from "../state/RuntimeState";
 import type { ProjectileResolution } from "../systems/ProjectileSystem";
 import type { CoinSource } from "../systems/coin-income";
+import type { ShopItemId } from "../config/shop.config";
 import type { Point } from "../utils/ballistics";
 
 export type GameEventMap = {
@@ -15,6 +16,12 @@ export type GameEventMap = {
   "level:changed": { levelId: number; normalCleared: boolean; clearCoinGoal: number };
   "intent:go-next-level": Record<string, never>;
   "intent:go-previous-level": Record<string, never>;
+  "intent:open-shop": Record<string, never>;
+  "intent:close-modal": Record<string, never>;
+  "intent:purchase-shop-item": { itemId: ShopItemId };
+  "shop:changed": Record<string, never>;
+  "shop:purchased": { itemId: ShopItemId; level: number; newlyUnlocked: readonly ShopItemId[] };
+  "shop:purchase-failed": { itemId: ShopItemId; reason: "locked" | "maxed" | "insufficient" };
   "phase:changed": { previous: GamePhase; current: GamePhase; state: Readonly<RuntimeState> };
   "modal:changed": { modal: ModalType; state: Readonly<RuntimeState> };
   "state:changed": { state: Readonly<RuntimeState> };

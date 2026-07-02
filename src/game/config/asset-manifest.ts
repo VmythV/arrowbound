@@ -39,6 +39,8 @@ export const ASSET_KEYS = {
   loadingTrack: "ui-loading-track",
   loadingFill: "ui-loading-fill",
   hudPanel: "ui-hud-panel",
+  modalScrim: "ui-modal-scrim",
+  modalPanel: "ui-modal-panel",
   missDust: "effect-miss-dust",
   hitSpark: "effect-hit-spark",
 } as const;
@@ -62,6 +64,8 @@ export const VISUAL_ASSETS: readonly VisualAssetDefinition[] = [
   asset(ASSET_KEYS.petBasic, "pets/basic-pet.svg", 100, 80, "pets"),
   asset(ASSET_KEYS.chestBasic, "chests/basic-chest.svg", 128, 112, "chests"),
   asset(ASSET_KEYS.hudPanel, "ui/hud-panel.svg", 1240, 72, "ui"),
+  asset(ASSET_KEYS.modalScrim, "ui/modal-scrim.svg", 1280, 720, "ui"),
+  asset(ASSET_KEYS.modalPanel, "ui/modal-panel.svg", 960, 620, "ui"),
   asset(ASSET_KEYS.missDust, "effects/miss-dust.svg", 96, 48, "effects"),
   asset(ASSET_KEYS.hitSpark, "effects/hit-spark.svg", 96, 96, "effects"),
 ] as const;

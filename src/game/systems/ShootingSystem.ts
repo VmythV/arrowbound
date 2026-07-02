@@ -16,7 +16,7 @@ export type PlayerShot = {
 export class ShootingSystem {
   private readonly swingRange: number;
   private readonly swingCycle: number;
-  private readonly shotCooldownSeconds: number;
+  private shotCooldownSeconds: number;
   private swingProgress = 0;
 
   constructor(
@@ -30,6 +30,20 @@ export class ShootingSystem {
       config.minimumShotCooldownSeconds,
       config.shotCooldownSeconds,
     );
+  }
+
+  /**
+   * 更新射箭冷却（快速拉弓/祝福生效时调用），仍受最低冷却下限约束。
+   */
+  setShotCooldownSeconds(seconds: number): void {
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+      throw new RangeError("Shot cooldown must be finite and positive");
+    }
+    this.shotCooldownSeconds = Math.max(this.config.minimumShotCooldownSeconds, seconds);
+  }
+
+  get shotCooldown(): number {
+    return this.shotCooldownSeconds;
   }
 
   get bowAngle(): number {

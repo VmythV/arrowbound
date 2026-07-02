@@ -31,11 +31,13 @@ export type ProjectileSystemConfig = {
 
 export class ProjectileSystem {
   private readonly pool: Phaser.GameObjects.Group;
+  private target: ProjectileTarget;
 
   constructor(
     scene: Phaser.Scene,
     private readonly config: ProjectileSystemConfig,
   ) {
+    this.target = config.target;
     this.pool = scene.add.group({
       classType: Arrow,
       defaultKey: config.texture,
@@ -44,6 +46,14 @@ export class ProjectileSystem {
 
   get activeCount(): number {
     return this.pool.countActive(true);
+  }
+
+  /**
+   * 更新命中判定所用的环数评分配置（商店/祝福生效时调用）。
+   * 因商店打开时主游戏暂停、无在飞箭矢结算，切换不会影响进行中的判定。
+   */
+  setTargetScoring(scoring: ProjectileTarget["scoring"]): void {
+    this.target = { ...this.target, scoring };
   }
 
   launch(config: ArrowLaunchConfig): Arrow {
@@ -81,7 +91,7 @@ export class ProjectileSystem {
         const targetResolution = detectTargetPlaneResolution(
           step.previousTip,
           step.currentTip,
-          this.config.target,
+          this.target,
         );
         if (targetResolution !== null) {
           arrow.targetPlaneChecked = true;

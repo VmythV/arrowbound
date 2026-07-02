@@ -2,6 +2,9 @@ import * as Phaser from "phaser";
 import { getGameServices, type GameServices } from "../GameServices";
 import { ASSET_KEYS } from "../config/asset-manifest";
 import { COIN_HUD_ANCHOR, GAME_WIDTH, SCENE_KEYS } from "../config/game.constants";
+import type { ShopItemId } from "../config/shop.config";
+import type { ModalType } from "../state/RuntimeState";
+import { ShopModal } from "../ui/ShopModal";
 
 const BUTTON_ENABLED_COLOR = "#f8f1dc";
 const BUTTON_DISABLED_COLOR = "#7c8b93";
@@ -15,6 +18,7 @@ export class UIScene extends Phaser.Scene {
   private coinsText: Phaser.GameObjects.Text | undefined;
   private prevButton: Phaser.GameObjects.Text | undefined;
   private nextButton: Phaser.GameObjects.Text | undefined;
+  private shopModal: ShopModal | undefined;
   private coinCountTween: Phaser.Tweens.Tween | undefined;
   private displayedCoins = 0;
 
@@ -70,24 +74,51 @@ export class UIScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.createButton(110, 682, "商店", "intent:open-shop");
     this.prevButton = this.createButton(GAME_WIDTH - 250, 682, "上一关", "intent:go-previous-level");
     this.nextButton = this.createButton(GAME_WIDTH - 110, 682, "下一关", "intent:go-next-level");
+    this.shopModal = new ShopModal(this, this.services);
 
     this.services.events.on("game:ready", this.handleGameReady, this);
     this.services.events.on("shot:fired", this.handleShotFired, this);
     this.services.events.on("arrow:resolved", this.handleArrowResolved, this);
     this.services.events.on("wallet:changed", this.handleWalletChanged, this);
     this.services.events.on("level:changed", this.handleLevelChanged, this);
+    this.services.events.on("modal:changed", this.handleModalChanged, this);
+    this.services.events.on("shop:changed", this.handleShopChanged, this);
+    this.services.events.on("shop:purchased", this.handleShopPurchased, this);
+    this.services.events.on("shop:purchase-failed", this.handleShopPurchaseFailed, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleShutdown, this);
 
     this.refreshLevelDisplay();
+  }
+
+  private handleModalChanged({ modal }: { modal: ModalType }): void {
+    if (modal === "shop") {
+      this.shopModal?.open();
+    } else {
+      this.shopModal?.close();
+    }
+  }
+
+  private handleShopChanged(): void {
+    this.shopModal?.refresh();
+  }
+
+  private handleShopPurchased({ itemId }: { itemId: ShopItemId }): void {
+    this.shopModal?.flashPurchase(itemId);
+    this.shopModal?.refresh();
+  }
+
+  private handleShopPurchaseFailed({ itemId }: { itemId: ShopItemId }): void {
+    this.shopModal?.flashFailure(itemId);
   }
 
   private createButton(
     x: number,
     y: number,
     label: string,
-    intent: "intent:go-next-level" | "intent:go-previous-level",
+    intent: "intent:go-next-level" | "intent:go-previous-level" | "intent:open-shop",
   ): Phaser.GameObjects.Text {
     const button = this.add
       .text(x, y, label, {
@@ -180,6 +211,9 @@ export class UIScene extends Phaser.Scene {
         });
       }
     }
+    if (this.shopModal?.isOpen === true) {
+      this.shopModal.refresh();
+    }
     this.refreshLevelDisplay();
   }
 
@@ -206,8 +240,14 @@ export class UIScene extends Phaser.Scene {
     this.services?.events.off("arrow:resolved", this.handleArrowResolved, this);
     this.services?.events.off("wallet:changed", this.handleWalletChanged, this);
     this.services?.events.off("level:changed", this.handleLevelChanged, this);
+    this.services?.events.off("modal:changed", this.handleModalChanged, this);
+    this.services?.events.off("shop:changed", this.handleShopChanged, this);
+    this.services?.events.off("shop:purchased", this.handleShopPurchased, this);
+    this.services?.events.off("shop:purchase-failed", this.handleShopPurchaseFailed, this);
     this.coinCountTween?.stop();
     this.coinCountTween = undefined;
+    this.shopModal?.destroy();
+    this.shopModal = undefined;
     this.coinIcon = undefined;
     this.coinsText = undefined;
     this.levelText = undefined;

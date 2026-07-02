@@ -7,7 +7,6 @@ import {
   GAME_HEIGHT,
   GAME_WIDTH,
   GROUND_Y,
-  INITIAL_SHOT_COOLDOWN_SECONDS,
   MINIMUM_SHOT_COOLDOWN_SECONDS,
   PLAY_AREA_BOTTOM,
   PLAY_AREA_TOP,
@@ -15,6 +14,7 @@ import {
   SCENE_KEYS,
 } from "../config/game.constants";
 import { type LevelConfig } from "../config/level.config";
+import type { ShopItemId } from "../config/shop.config";
 import { Bow } from "../entities/Bow";
 import { Player } from "../entities/Player";
 import { CoinDropSystem } from "../systems/CoinDropSystem";
@@ -57,7 +57,7 @@ export class MainGameScene extends Phaser.Scene {
     this.shooting = new ShootingSystem(
       {
         bow: level.bow,
-        shotCooldownSeconds: INITIAL_SHOT_COOLDOWN_SECONDS,
+        shotCooldownSeconds: this.services.shop.shotCooldownSeconds(),
         minimumShotCooldownSeconds: MINIMUM_SHOT_COOLDOWN_SECONDS,
       },
       this.services.state,
@@ -117,6 +117,10 @@ export class MainGameScene extends Phaser.Scene {
     }
     this.services.events.on("intent:go-next-level", this.handleGoNextLevel, this);
     this.services.events.on("intent:go-previous-level", this.handleGoPreviousLevel, this);
+    this.services.events.on("intent:open-shop", this.handleOpenShop, this);
+    this.services.events.on("intent:close-modal", this.handleCloseModal, this);
+    this.services.events.on("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
+    this.services.events.on("shop:changed", this.handleShopChanged, this);
 
     if (!this.scene.isActive(SCENE_KEYS.ui)) {
       this.scene.launch(SCENE_KEYS.ui);
@@ -168,25 +172,41 @@ export class MainGameScene extends Phaser.Scene {
   }
 
   private buildRingScoring(level: LevelConfig): RingScoringConfig {
-    // 商店等级与祝福倍率由后续阶段接入，当前使用无加成的基础值。
+    // 祝福倍率由阶段 6 接入，当前仅叠加精准瞄准商店加成。
     return {
       baseTargetRadius: level.target.radius,
       centerRingRatio: level.target.centerRingRatio,
-      preciseAimLevel: 0,
+      preciseAimLevel: this.services?.shop.preciseAimLevel ?? 0,
       centerBlessingMultiplier: 1,
       wideTargetMultiplier: 1,
     };
   }
 
   private buildCoinIncome(): CoinIncomeContext {
-    // 商店等级与金币祝福由后续阶段接入，当前使用无加成的基础倍率。
+    // 金币祝福由阶段 6 接入，当前仅叠加贪婪金币与机械贪婪商店等级。
+    const shop = this.services?.shop;
     return {
-      greedyCoinLevel: 0,
-      robotGreedLevel: 0,
+      greedyCoinLevel: shop?.greedyCoinLevel ?? 0,
+      robotGreedLevel: shop?.robotGreedLevel ?? 0,
       allCoinMultiplier: 1,
       tenRingMultiplier: 1,
     };
   }
+
+  private applyShopEffects(): void {
+    const services = this.services;
+    const level = this.level;
+    if (services === undefined || level === undefined) {
+      return;
+    }
+    this.projectiles?.setTargetScoring(this.buildRingScoring(level));
+    this.coinIncome = this.buildCoinIncome();
+    this.shooting?.setShotCooldownSeconds(services.shop.shotCooldownSeconds());
+  }
+
+  private readonly handleShopChanged = (): void => {
+    this.applyShopEffects();
+  };
 
   private handleIntroComplete(): void {
     const services = this.services;
@@ -255,6 +275,45 @@ export class MainGameScene extends Phaser.Scene {
       return;
     }
     this.transitionToLevel(progression.currentConfig.id - 1);
+  };
+
+  private readonly handleOpenShop = (): void => {
+    const services = this.services;
+    if (services === undefined) {
+      return;
+    }
+    const snapshot = services.state.snapshot;
+    if ((snapshot.phase !== "playing" && snapshot.phase !== "challenge") || snapshot.activeModal !== null) {
+      return;
+    }
+    services.state.openModal("shop");
+  };
+
+  private readonly handleCloseModal = (): void => {
+    this.services?.state.closeModal();
+  };
+
+  private readonly handlePurchaseShopItem = ({ itemId }: { itemId: ShopItemId }): void => {
+    const services = this.services;
+    if (services === undefined || services.state.snapshot.activeModal !== "shop") {
+      return;
+    }
+    const result = services.shop.tryPurchase(
+      itemId,
+      { isNormalCleared: (levelId) => services.progression.isNormalCleared(levelId) },
+      (cost) => services.ledger.spend(cost),
+    );
+    if (result.status !== "ok") {
+      services.events.emit("shop:purchase-failed", { itemId, reason: result.status });
+      return;
+    }
+    this.applyShopEffects();
+    services.events.emit("shop:purchased", {
+      itemId,
+      level: result.level,
+      newlyUnlocked: result.newlyUnlocked,
+    });
+    services.events.emit("shop:changed", {});
   };
 
   private transitionToLevel(targetLevelId: number): void {
@@ -334,6 +393,10 @@ export class MainGameScene extends Phaser.Scene {
     this.spaceKey?.off("down", this.handleShootIntent, this);
     this.services?.events.off("intent:go-next-level", this.handleGoNextLevel, this);
     this.services?.events.off("intent:go-previous-level", this.handleGoPreviousLevel, this);
+    this.services?.events.off("intent:open-shop", this.handleOpenShop, this);
+    this.services?.events.off("intent:close-modal", this.handleCloseModal, this);
+    this.services?.events.off("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
+    this.services?.events.off("shop:changed", this.handleShopChanged, this);
     this.shotFeedback?.destroy();
     this.projectiles?.destroy();
     // 关卡切换时金币已在 transitionToLevel 入账；此处只销毁对象池，
