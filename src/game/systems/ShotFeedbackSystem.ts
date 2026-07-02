@@ -1,5 +1,6 @@
 import * as Phaser from "phaser";
 import type { Point } from "../utils/ballistics";
+import { THEME } from "../config/theme";
 
 type ActiveEffect = {
   readonly objects: readonly Phaser.GameObjects.GameObject[];
@@ -209,10 +210,10 @@ export class ShotFeedbackSystem {
     const label = this.scene.add
       .text(point.x, point.y - 34, ringLabel(ring), {
         color: tier.textColor,
-        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        fontFamily: THEME.fonts.display,
         fontSize: "22px",
         fontStyle: "bold",
-        stroke: "#273842",
+        stroke: THEME.color.panel,
         strokeThickness: 4,
       })
       .setOrigin(0.5)
@@ -279,6 +280,11 @@ export class ShotFeedbackSystem {
 
     if (tier.shakePixels > 0 && !this.paused) {
       this.scene.cameras.main.shake(120, tier.shakePixels / this.gameWidth);
+    }
+
+    // 玩家十环全屏品红闪：手动命中峰值反馈（机器人十环不触发）。
+    if (ring >= 10 && source === "player" && !this.paused) {
+      this.scene.cameras.main.flash(150, 255, 92, 138, false);
     }
 
     this.effects.add(effect);

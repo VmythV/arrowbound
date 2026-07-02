@@ -39,6 +39,8 @@ export class UIScene extends Phaser.Scene {
   private blessingInfo: Phaser.GameObjects.Text | undefined;
   private cooldownFill: Phaser.GameObjects.Image | undefined;
   private goalFill: Phaser.GameObjects.Image | undefined;
+  private goalPulse: Phaser.Tweens.Tween | undefined;
+  private nextWasEnabled = false;
   private coinCountTween: Phaser.Tweens.Tween | undefined;
   private displayedCoins = 0;
   private lastChallengeSecond = -1;
@@ -380,6 +382,23 @@ export class UIScene extends Phaser.Scene {
     const goalFraction =
       cleared || level.clearCoinGoal <= 0 ? 1 : Math.max(0, Math.min(1, coins / level.clearCoinGoal));
     this.goalFill?.setScale(Math.max(0.001, goalFraction), 1).setTint(goalFraction >= 1 ? THEME.hex.ok : THEME.hex.coin);
+    // 达标即进度条呼吸脉冲；回落或通关后停止并复位。
+    if (goalFraction >= 1 && !cleared) {
+      if (this.goalPulse === undefined && this.goalFill !== undefined) {
+        this.goalPulse = this.tweens.add({
+          targets: this.goalFill,
+          alpha: { from: 1, to: 0.55 },
+          duration: 620,
+          ease: "Sine.InOut",
+          yoyo: true,
+          repeat: -1,
+        });
+      }
+    } else if (this.goalPulse !== undefined) {
+      this.goalPulse.stop();
+      this.goalPulse = undefined;
+      this.goalFill?.setAlpha(1);
+    }
 
     const canAdvance = progression.hasNextLevel() && (cleared || coins >= level.clearCoinGoal);
     // 未通关时在按钮上标出通关会扣除的金币，帮玩家决定先囤钱还是先通关。
@@ -389,7 +408,17 @@ export class UIScene extends Phaser.Scene {
     if (this.nextButton !== undefined) {
       this.nextButton.setBackgroundColor(canAdvance ? CTA_BG : BUTTON_BG);
       this.nextButton.setColor(canAdvance ? CTA_TEXT : BUTTON_DISABLED_COLOR);
+      // 从不可用变为可用的瞬间弹出一次，提示可以通关了。
+      if (canAdvance && !this.nextWasEnabled) {
+        this.tweens.add({
+          targets: this.nextButton,
+          scale: { from: 1.18, to: 1 },
+          duration: 320,
+          ease: "Back.Out",
+        });
+      }
     }
+    this.nextWasEnabled = canAdvance;
     this.setButtonEnabled(this.prevButton, progression.hasPreviousLevel());
 
     // 本关挑战宝箱已领取时在挑战按钮标注，避免误以为重复挑战仍有宝箱。
@@ -490,6 +519,8 @@ export class UIScene extends Phaser.Scene {
     this.resultBanner = undefined;
     this.blessingInfo = undefined;
     this.cooldownFill = undefined;
+    this.goalPulse?.stop();
+    this.goalPulse = undefined;
     this.goalFill = undefined;
     this.coinIcon = undefined;
     this.coinsText = undefined;
