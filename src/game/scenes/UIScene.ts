@@ -363,9 +363,15 @@ export class UIScene extends Phaser.Scene {
     );
 
     const canAdvance = progression.hasNextLevel() && (cleared || coins >= level.clearCoinGoal);
-    this.nextButton?.setText(cleared ? "下一关" : "确认通关");
+    // 未通关时在按钮上标出通关会扣除的金币，帮玩家决定先囤钱还是先通关。
+    this.nextButton?.setText(cleared ? "下一关" : `确认通关 -${level.clearCoinGoal}`);
     this.setButtonEnabled(this.nextButton, canAdvance);
     this.setButtonEnabled(this.prevButton, progression.hasPreviousLevel());
+
+    // 本关挑战宝箱已领取时在挑战按钮标注，避免误以为重复挑战仍有宝箱。
+    this.challengeButton?.setText(
+      progression.isChallengeChestClaimed(level.id) ? "挑战·宝箱已领" : "开始挑战",
+    );
 
     const blessingId = progression.getSelectedBlessingId(level.id);
     const blessingName = BLESSING_CONFIGS.find((config) => config.id === blessingId)?.name;
