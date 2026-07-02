@@ -17,7 +17,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.registry.set(GAME_SERVICES_REGISTRY_KEY, createGameServices());
+    const services = createGameServices();
+    this.registry.set(GAME_SERVICES_REGISTRY_KEY, services);
+    // 页面进入隐藏状态时暂停整局模拟，恢复可见时解除该暂停原因。
+    this.game.events.on(Phaser.Core.Events.HIDDEN, () => services.state.setVisibilityPaused(true));
+    this.game.events.on(Phaser.Core.Events.VISIBLE, () => services.state.setVisibilityPaused(false));
     this.scene.start(SCENE_KEYS.preload);
   }
 }

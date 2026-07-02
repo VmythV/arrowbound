@@ -7,6 +7,7 @@ import type { GamePhase, ModalType, RuntimeState } from "../state/RuntimeState";
 import type { PendingReward } from "../state/SaveData";
 import { BlessingOverlay } from "../ui/BlessingOverlay";
 import { RewardOverlay } from "../ui/RewardOverlay";
+import { SettingsModal } from "../ui/SettingsModal";
 import { ShopModal } from "../ui/ShopModal";
 
 const BUTTON_ENABLED_COLOR = "#f8f1dc";
@@ -22,6 +23,7 @@ export class UIScene extends Phaser.Scene {
   private prevButton: Phaser.GameObjects.Text | undefined;
   private nextButton: Phaser.GameObjects.Text | undefined;
   private shopModal: ShopModal | undefined;
+  private settingsModal: SettingsModal | undefined;
   private blessingOverlay: BlessingOverlay | undefined;
   private rewardOverlay: RewardOverlay | undefined;
   private challengeButton: Phaser.GameObjects.Text | undefined;
@@ -85,9 +87,11 @@ export class UIScene extends Phaser.Scene {
 
     this.createButton(110, 682, "商店", "intent:open-shop");
     this.challengeButton = this.createButton(260, 682, "开始挑战", "intent:start-challenge");
+    this.createButton(410, 682, "设置", "intent:open-settings");
     this.prevButton = this.createButton(GAME_WIDTH - 250, 682, "上一关", "intent:go-previous-level");
     this.nextButton = this.createButton(GAME_WIDTH - 110, 682, "下一关", "intent:go-next-level");
     this.shopModal = new ShopModal(this, this.services);
+    this.settingsModal = new SettingsModal(this, this.services);
     this.blessingOverlay = new BlessingOverlay(this, this.services);
     this.rewardOverlay = new RewardOverlay(this, this.services);
 
@@ -139,6 +143,11 @@ export class UIScene extends Phaser.Scene {
       this.shopModal?.open();
     } else {
       this.shopModal?.close();
+    }
+    if (modal === "settings") {
+      this.settingsModal?.open();
+    } else {
+      this.settingsModal?.close();
     }
   }
 
@@ -251,6 +260,7 @@ export class UIScene extends Phaser.Scene {
       | "intent:go-next-level"
       | "intent:go-previous-level"
       | "intent:open-shop"
+      | "intent:open-settings"
       | "intent:start-challenge",
   ): Phaser.GameObjects.Text {
     const button = this.add
@@ -388,6 +398,8 @@ export class UIScene extends Phaser.Scene {
     this.coinCountTween = undefined;
     this.shopModal?.destroy();
     this.shopModal = undefined;
+    this.settingsModal?.destroy();
+    this.settingsModal = undefined;
     this.blessingOverlay?.destroy();
     this.blessingOverlay = undefined;
     this.rewardOverlay?.destroy();

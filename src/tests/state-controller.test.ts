@@ -61,4 +61,23 @@ describe("StateController", () => {
     expect(controller.snapshot.shootCooldownLeft).toBe(0);
     expect(controller.snapshot.canShoot).toBe(true);
   });
+
+  it("stays paused until every pause reason clears", () => {
+    const controller = new StateController(createEventSink());
+    controller.transitionTo("playing");
+    expect(controller.snapshot.isGameplayPaused).toBe(false);
+
+    controller.openModal("settings");
+    controller.setVisibilityPaused(true);
+    expect(controller.snapshot.isGameplayPaused).toBe(true);
+
+    // 关闭设置后仍因页面隐藏而暂停。
+    controller.closeModal();
+    expect(controller.snapshot.isGameplayPaused).toBe(true);
+    expect(controller.snapshot.pauseReason).toBe("visibility");
+
+    controller.setVisibilityPaused(false);
+    expect(controller.snapshot.isGameplayPaused).toBe(false);
+    expect(controller.snapshot.pauseReason).toBeUndefined();
+  });
 });

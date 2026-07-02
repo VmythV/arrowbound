@@ -155,6 +155,7 @@ export class MainGameScene extends Phaser.Scene {
     this.services.events.on("intent:go-next-level", this.handleGoNextLevel, this);
     this.services.events.on("intent:go-previous-level", this.handleGoPreviousLevel, this);
     this.services.events.on("intent:open-shop", this.handleOpenShop, this);
+    this.services.events.on("intent:open-settings", this.handleOpenSettings, this);
     this.services.events.on("intent:close-modal", this.handleCloseModal, this);
     this.services.events.on("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
     this.services.events.on("intent:select-blessing", this.handleSelectBlessing, this);
@@ -547,6 +548,18 @@ export class MainGameScene extends Phaser.Scene {
     services.state.openModal("shop");
   };
 
+  private readonly handleOpenSettings = (): void => {
+    const services = this.services;
+    if (services === undefined) {
+      return;
+    }
+    const snapshot = services.state.snapshot;
+    if ((snapshot.phase !== "playing" && snapshot.phase !== "challenge") || snapshot.activeModal !== null) {
+      return;
+    }
+    services.state.openModal("settings");
+  };
+
   private readonly handleCloseModal = (): void => {
     this.services?.state.closeModal();
   };
@@ -655,6 +668,7 @@ export class MainGameScene extends Phaser.Scene {
     this.services?.events.off("intent:go-next-level", this.handleGoNextLevel, this);
     this.services?.events.off("intent:go-previous-level", this.handleGoPreviousLevel, this);
     this.services?.events.off("intent:open-shop", this.handleOpenShop, this);
+    this.services?.events.off("intent:open-settings", this.handleOpenSettings, this);
     this.services?.events.off("intent:close-modal", this.handleCloseModal, this);
     this.services?.events.off("intent:purchase-shop-item", this.handlePurchaseShopItem, this);
     this.services?.events.off("intent:select-blessing", this.handleSelectBlessing, this);
