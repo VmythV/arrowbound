@@ -1,6 +1,6 @@
 import * as Phaser from "phaser";
 import { getGameServices, type GameServices } from "../GameServices";
-import { ASSET_KEYS } from "../config/asset-manifest";
+import { ASSET_KEYS, backgroundKeyForLevel } from "../config/asset-manifest";
 import {
   ARROW_SPAWN_POSITION,
   CHALLENGE_DURATION_SECONDS,
@@ -61,7 +61,7 @@ export class MainGameScene extends Phaser.Scene {
     this.services.state.setCurrentLevel(level.id);
 
     const background = this.add
-      .image(GAME_WIDTH / 2, GAME_HEIGHT / 2, ASSET_KEYS.meadowBackground)
+      .image(GAME_WIDTH / 2, GAME_HEIGHT / 2, backgroundKeyForLevel(level.id))
       .setAlpha(0)
       .setDepth(-10);
     this.shooting = new ShootingSystem(

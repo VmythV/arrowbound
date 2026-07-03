@@ -22,6 +22,15 @@ export type VisualAssetDefinition = {
 
 export const ASSET_KEYS = {
   meadowBackground: "background-meadow",
+  backgroundTheme1: "background-theme-1",
+  backgroundTheme2: "background-theme-2",
+  backgroundTheme3: "background-theme-3",
+  backgroundTheme4: "background-theme-4",
+  backgroundTheme5: "background-theme-5",
+  backgroundTheme6: "background-theme-6",
+  backgroundTheme7: "background-theme-7",
+  backgroundTheme8: "background-theme-8",
+  backgroundTheme9: "background-theme-9",
   playerBody: "character-player-body",
   playerDrawArm: "character-player-draw-arm",
   bowBasic: "bow-basic",
@@ -58,6 +67,15 @@ export const VISUAL_ASSETS: readonly VisualAssetDefinition[] = [
   asset(ASSET_KEYS.loadingTrack, "ui/loading-track.svg", 480, 28, "ui", "boot"),
   asset(ASSET_KEYS.loadingFill, "ui/loading-fill.svg", 464, 12, "ui", "boot"),
   asset(ASSET_KEYS.meadowBackground, "backgrounds/meadow-range.svg", 1280, 720, "backgrounds"),
+  asset(ASSET_KEYS.backgroundTheme1, "backgrounds/theme-1.svg", 1280, 720, "backgrounds"),
+  asset(ASSET_KEYS.backgroundTheme2, "backgrounds/theme-2.svg", 1280, 720, "backgrounds"),
+  asset(ASSET_KEYS.backgroundTheme3, "backgrounds/theme-3.svg", 1280, 720, "backgrounds"),
+  asset(ASSET_KEYS.backgroundTheme4, "backgrounds/theme-4.svg", 1280, 720, "backgrounds"),
+  asset(ASSET_KEYS.backgroundTheme5, "backgrounds/theme-5.svg", 1280, 720, "backgrounds"),
+  asset(ASSET_KEYS.backgroundTheme6, "backgrounds/theme-6.svg", 1280, 720, "backgrounds"),
+  asset(ASSET_KEYS.backgroundTheme7, "backgrounds/theme-7.svg", 1280, 720, "backgrounds"),
+  asset(ASSET_KEYS.backgroundTheme8, "backgrounds/theme-8.svg", 1280, 720, "backgrounds"),
+  asset(ASSET_KEYS.backgroundTheme9, "backgrounds/theme-9.svg", 1280, 720, "backgrounds"),
   asset(ASSET_KEYS.playerBody, "characters/player-body.svg", 144, 220, "characters"),
   asset(ASSET_KEYS.playerDrawArm, "characters/player-draw-arm.svg", 64, 40, "characters"),
   asset(ASSET_KEYS.bowBasic, "bows/basic-bow.svg", 72, 148, "bows"),
@@ -87,6 +105,27 @@ export const VISUAL_ASSETS: readonly VisualAssetDefinition[] = [
   asset(ASSET_KEYS.hitSpark, "effects/hit-spark.svg", 96, 96, "effects"),
   asset(ASSET_KEYS.confettiPiece, "effects/confetti-piece.svg", 12, 16, "effects"),
 ] as const;
+
+/** 10 套主题背景，按 (levelId-1)%10 循环，供无限流关卡换肤（第 0 主题沿用晨曦草原）。 */
+export const BACKGROUND_THEME_KEYS: readonly string[] = [
+  ASSET_KEYS.meadowBackground,
+  ASSET_KEYS.backgroundTheme1,
+  ASSET_KEYS.backgroundTheme2,
+  ASSET_KEYS.backgroundTheme3,
+  ASSET_KEYS.backgroundTheme4,
+  ASSET_KEYS.backgroundTheme5,
+  ASSET_KEYS.backgroundTheme6,
+  ASSET_KEYS.backgroundTheme7,
+  ASSET_KEYS.backgroundTheme8,
+  ASSET_KEYS.backgroundTheme9,
+];
+
+/** 按关卡 id 选取主题背景 key。 */
+export function backgroundKeyForLevel(levelId: number): string {
+  const count = BACKGROUND_THEME_KEYS.length;
+  const index = (((Math.floor(levelId) - 1) % count) + count) % count;
+  return BACKGROUND_THEME_KEYS[index] ?? ASSET_KEYS.meadowBackground;
+}
 
 function asset(
   key: string,
