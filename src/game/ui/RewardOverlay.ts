@@ -100,6 +100,21 @@ export class RewardOverlay {
       duration: 420,
       ease: "Back.Out",
     });
+    // 开箱光爆：一圈金色光晕从箱体后方放大淡出，强化“开箱”仪式感。
+    const burst = this.scene.add
+      .image(CENTER_X, CHEST_Y, ASSET_KEYS.hitSpark)
+      .setTint(0xffe79a)
+      .setScale(0.4)
+      .setAlpha(0.85)
+      .setDepth(1200);
+    this.scene.tweens.add({
+      targets: burst,
+      scale: 2.6,
+      alpha: 0,
+      duration: 560,
+      ease: "Sine.Out",
+      onComplete: () => burst.destroy(),
+    });
   }
 
   hide(): void {

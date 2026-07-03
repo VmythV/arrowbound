@@ -22,6 +22,8 @@ export type RobotSystemConfig = {
 
 type Robot = {
   readonly sprite: Phaser.GameObjects.Image;
+  readonly baseY: number;
+  idleTime: number;
   cooldownLeft: number;
   fireTween: Phaser.Tweens.Tween | undefined;
 };
@@ -30,6 +32,9 @@ const ROBOT_SPACING = 34;
 const ROBOT_BASE_X = 118;
 const ARROW_SPAWN_DX = 18;
 const ARROW_SPAWN_HEIGHT = 150;
+const ROBOT_REST_SCALE = 0.7;
+const ROBOT_BOB_AMPLITUDE = 2.6;
+const ROBOT_BOB_SPEED = 0.003;
 
 /**
  * 机器人自动射击系统。按机械弓手等级维持 0～5 个机器人，各自计时后按概率表抽取目标环、
@@ -69,6 +74,9 @@ export class RobotSystem {
     }
     const deltaSeconds = deltaMs / 1_000;
     for (const robot of this.robots) {
+      // 待机轻浮：让静态机器人有呼吸感（不影响箭矢生成高度）。
+      robot.idleTime += deltaMs;
+      robot.sprite.y = robot.baseY - Math.sin(robot.idleTime * ROBOT_BOB_SPEED) * ROBOT_BOB_AMPLITUDE;
       robot.cooldownLeft -= deltaSeconds;
       if (robot.cooldownLeft <= 0) {
         robot.cooldownLeft += Math.max(0.1, this.config.getShotIntervalSeconds());
@@ -151,29 +159,33 @@ export class RobotSystem {
 
   private playFireAnimation(robot: Robot): void {
     robot.fireTween?.stop();
-    robot.sprite.setScale(1);
+    robot.sprite.setScale(ROBOT_REST_SCALE);
+    // 围绕基础缩放做拉弓释放挤压，避免覆盖 0.7 基准导致机器人变大。
     robot.fireTween = this.scene.tweens.add({
       targets: robot.sprite,
-      scaleY: { from: 0.92, to: 1 },
-      scaleX: { from: 1.05, to: 1 },
+      scaleY: { from: ROBOT_REST_SCALE * 0.9, to: ROBOT_REST_SCALE },
+      scaleX: { from: ROBOT_REST_SCALE * 1.08, to: ROBOT_REST_SCALE },
       duration: 180,
       ease: "Quad.Out",
       paused: this.paused,
       onComplete: () => {
-        robot.sprite.setScale(1);
+        robot.sprite.setScale(ROBOT_REST_SCALE);
         robot.fireTween = undefined;
       },
     });
   }
 
   private createRobot(index: number): Robot {
+    const baseY = this.config.groundY - 4;
     const sprite = this.scene.add
-      .image(ROBOT_BASE_X - index * ROBOT_SPACING, this.config.groundY - 4, this.config.texture)
+      .image(ROBOT_BASE_X - index * ROBOT_SPACING, baseY, this.config.texture)
       .setOrigin(0.5, 1)
-      .setScale(0.7)
+      .setScale(ROBOT_REST_SCALE)
       .setDepth(-5);
     return {
       sprite,
+      baseY,
+      idleTime: this.random.next() * 1000,
       cooldownLeft: this.random.next() * ROBOT_CONFIG.maximumInitialDelaySeconds,
       fireTween: undefined,
     };
