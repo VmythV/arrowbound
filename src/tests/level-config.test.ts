@@ -28,8 +28,8 @@ describe("getLevelConfig", () => {
     expect(level).toBeDefined();
     expect(level?.id).toBe(11);
     expect(level?.name).toBe("新手靶场·2周目");
-    expect(level?.clearCoinGoal).toBe(10200);
-    expect(level?.challengeTargetCoins).toBe(3060);
+    expect(level?.clearCoinGoal).toBe(9200); // round(6800 × 1.35 / 100) × 100
+    expect(level?.challengeTargetCoins).toBe(2760);
     expect(level?.challengeDurationSeconds).toBe(60);
   });
 

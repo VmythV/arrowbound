@@ -53,7 +53,7 @@ describe("ShopService cost", () => {
 
     const leveled = shopWith({ preciseAimLevel: 1, greedyCoinLevel: 2 });
     expect(leveled.getCost("precise_aim")).toBe(37); // ceil(30 × 1.22)
-    expect(leveled.getCost("greedy_coin")).toBe(63); // ceil(40 × 1.25^2)
+    expect(leveled.getCost("greedy_coin")).toBe(60); // ceil(40 × 1.22^2)
   });
 
   it("reports maxed items with no cost", () => {
@@ -131,7 +131,7 @@ describe("ShopService effect readers", () => {
     expect(shop.getLevel("quick_draw")).toBe(22); // max level for quick_draw
     expect(shop.shotCooldownSeconds()).toBe(0.35);
     expect(shop.robotCount()).toBe(5);
-    expect(shop.robotCoinMultiplier()).toBeCloseTo(0.98, 10);
+    expect(shop.robotCoinMultiplier()).toBeCloseTo(1.127357, 6); // 0.7 × 1.1^5
   });
 });
 

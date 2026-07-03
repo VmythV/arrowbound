@@ -15,24 +15,26 @@ export type CoinIncomeContext = {
   readonly tenRingMultiplier: number;
 };
 
-const MANUAL_GREED_PER_LEVEL = 0.1;
+// 无限流经济：贪婪金币与机械贪婪改为乘法复利（每级 ×1.10），使收入能随等级几何增长、
+// 长时间追上几何增长的通关目标（见 docs/05 §3）。两者同速率增长，保持手动:机器人收益比恒定。
+const MANUAL_GREED_RATE = 1.1;
 const ROBOT_BASE_MULTIPLIER = 0.7;
-const ROBOT_GREED_PER_LEVEL = 0.08;
+const ROBOT_GREED_RATE = 1.1;
 
 /**
- * 手动收益倍率：`1 + 0.10 × greedyCoinLevel`。
+ * 手动收益倍率：`1.10 ^ greedyCoinLevel`（等级 0 为 1）。
  */
 export function manualCoinMultiplier(greedyCoinLevel: number): number {
   assertLevel(greedyCoinLevel, "greedyCoinLevel");
-  return 1 + MANUAL_GREED_PER_LEVEL * greedyCoinLevel;
+  return MANUAL_GREED_RATE ** greedyCoinLevel;
 }
 
 /**
- * 机器人收益倍率：`0.7 × (1 + 0.08 × robotGreedLevel)`。
+ * 机器人收益倍率：`0.7 × 1.10 ^ robotGreedLevel`（等级 0 为 0.7）。
  */
 export function robotCoinMultiplier(robotGreedLevel: number): number {
   assertLevel(robotGreedLevel, "robotGreedLevel");
-  return ROBOT_BASE_MULTIPLIER * (1 + ROBOT_GREED_PER_LEVEL * robotGreedLevel);
+  return ROBOT_BASE_MULTIPLIER * ROBOT_GREED_RATE ** robotGreedLevel;
 }
 
 /**

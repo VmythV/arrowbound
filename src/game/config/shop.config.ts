@@ -42,9 +42,9 @@ export const SHOP_CONFIGS: readonly ShopItemConfig[] = [
   {
     id: "greedy_coin",
     name: "贪婪金币",
-    description: "每级使手动金币倍率增加百分之十",
+    description: "每级使手动金币倍率乘以一点一",
     baseCost: 40,
-    costMultiplier: 1.25,
+    costMultiplier: 1.22,
     // 无限流纯乘法收益道具，解封至工程上限（见 docs/05 §6）。
     maxLevel: MAX_SHOP_LEVEL,
     unlockCondition: { type: "always" },
@@ -81,7 +81,7 @@ export const SHOP_CONFIGS: readonly ShopItemConfig[] = [
     name: "机械贪婪",
     description: "提高机器人金币倍率",
     baseCost: 160,
-    costMultiplier: 1.32,
+    costMultiplier: 1.28,
     // 无限流纯乘法收益道具，解封至工程上限（见 docs/05 §6）。
     maxLevel: MAX_SHOP_LEVEL,
     unlockCondition: { type: "item_level", itemId: "robot_archer", level: 5 },

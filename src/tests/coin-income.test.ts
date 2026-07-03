@@ -17,14 +17,14 @@ function context(overrides: Partial<CoinIncomeContext> = {}): CoinIncomeContext 
 }
 
 describe("coin income multipliers", () => {
-  it("scales the manual multiplier by 0.1 per greedy-coin level", () => {
+  it("compounds the manual multiplier by x1.1 per greedy-coin level", () => {
     expect(manualCoinMultiplier(0)).toBe(1);
-    expect(manualCoinMultiplier(5)).toBeCloseTo(1.5, 10);
+    expect(manualCoinMultiplier(5)).toBeCloseTo(1.61051, 5);
   });
 
-  it("uses the 0.7 robot base scaled by 0.08 per robot-greed level", () => {
+  it("uses the 0.7 robot base compounded by x1.1 per robot-greed level", () => {
     expect(robotCoinMultiplier(0)).toBeCloseTo(0.7, 10);
-    expect(robotCoinMultiplier(5)).toBeCloseTo(0.98, 10);
+    expect(robotCoinMultiplier(5)).toBeCloseTo(1.127357, 6);
   });
 });
 
@@ -36,13 +36,13 @@ describe("computeCoinValue", () => {
 
   it("floors manual value using the greedy multiplier", () => {
     expect(computeCoinValue(10, "player", context())).toBe(10);
-    expect(computeCoinValue(10, "player", context({ greedyCoinLevel: 5 }))).toBe(15);
-    expect(computeCoinValue(7, "player", context({ greedyCoinLevel: 3 }))).toBe(9); // 7×1.3=9.1
+    expect(computeCoinValue(10, "player", context({ greedyCoinLevel: 5 }))).toBe(16); // 10×1.1^5≈16.1
+    expect(computeCoinValue(7, "player", context({ greedyCoinLevel: 3 }))).toBe(9); // 7×1.331≈9.3
   });
 
   it("floors robot value using the robot multiplier and never mixes with the manual one", () => {
     expect(computeCoinValue(10, "robot", context())).toBe(7); // 10×0.7
-    expect(computeCoinValue(10, "robot", context({ robotGreedLevel: 5 }))).toBe(9); // 10×0.98
+    expect(computeCoinValue(10, "robot", context({ robotGreedLevel: 5 }))).toBe(11); // 10×0.7×1.1^5≈11.3
     // 玩家等级不影响机器人收益，反之亦然。
     expect(computeCoinValue(10, "robot", context({ greedyCoinLevel: 20 }))).toBe(7);
     expect(computeCoinValue(10, "player", context({ robotGreedLevel: 20 }))).toBe(10);
@@ -64,14 +64,14 @@ describe("computeCoinValue", () => {
   });
 
   it("stacks blessings in the documented order for a ten ring", () => {
-    // 10 × (1+0.1×5) × 1.3 × 2 = 39
+    // 10 × 1.1^5 × 1.3 × 2 ≈ 41.9 → 41
     expect(
       computeCoinValue(
         10,
         "player",
         context({ greedyCoinLevel: 5, allCoinMultiplier: 1.3, tenRingMultiplier: 2 }),
       ),
-    ).toBe(39);
+    ).toBe(41);
   });
 
   it("rejects invalid rings", () => {

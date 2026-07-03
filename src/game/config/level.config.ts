@@ -94,7 +94,9 @@ function generateLevelConfig(id: number): LevelConfig {
   const k = id - HANDCRAFTED_LEVEL_COUNT; // >= 1
   const d = 0.82 ** k; // 收敛因子，随关卡趋近 0
 
-  const clearCoinGoal = Math.round((6800 * 1.5 ** k) / 100) * 100;
+  // 无限流跑步机：通关目标几何增长。倍率从 1.5 下调到 1.35，配合乘法复利收入，
+  // 让可持续游玩的关卡数显著后移（见 docs/05 §4.1）。
+  const clearCoinGoal = Math.round((6800 * 1.35 ** k) / 100) * 100;
   const challengeTargetCoins = Math.round((clearCoinGoal * 0.3) / 10) * 10;
 
   const themeIndex = (id - 1) % LEVEL_THEME_NAMES.length;

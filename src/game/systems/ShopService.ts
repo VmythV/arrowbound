@@ -27,8 +27,9 @@ const QUICK_DRAW_PER_LEVEL = 0.04;
 const ROBOT_BASE_INTERVAL_SECONDS = 4;
 const ROBOT_INTERVAL_DECAY = 0.95;
 const ROBOT_BASE_MULTIPLIER = 0.7;
-const ROBOT_GREED_PER_LEVEL = 0.08;
-const GREEDY_COIN_PER_LEVEL = 0.1;
+// 无限流：贪婪金币/机械贪婪改为乘法复利（每级 ×1.10），与 coin-income 保持一致。
+const ROBOT_GREED_RATE = 1.1;
+const GREEDY_COIN_RATE = 1.1;
 
 /**
  * 机器人数量公式（见 05 文档 §6），上限为 5。
@@ -225,7 +226,7 @@ export class ShopService {
   }
 
   robotCoinMultiplier(): number {
-    return ROBOT_BASE_MULTIPLIER * (1 + ROBOT_GREED_PER_LEVEL * this.levels.robot_greed);
+    return ROBOT_BASE_MULTIPLIER * ROBOT_GREED_RATE ** this.levels.robot_greed;
   }
 
   hasCoinPet(): boolean {
@@ -252,7 +253,7 @@ export class ShopService {
       case "precise_aim":
         return `十环基础半径 +${level}%`;
       case "greedy_coin":
-        return `手动金币 ×${(1 + GREEDY_COIN_PER_LEVEL * level).toFixed(2)}`;
+        return `手动金币 ×${(GREEDY_COIN_RATE ** level).toFixed(2)}`;
       case "quick_draw":
         return `射箭冷却 ${shotCooldownForLevel(level).toFixed(2)} 秒`;
       case "robot_archer":
@@ -260,7 +261,7 @@ export class ShopService {
       case "robot_rapid_fire":
         return `机器人间隔 ${(ROBOT_BASE_INTERVAL_SECONDS * ROBOT_INTERVAL_DECAY ** level).toFixed(2)} 秒`;
       case "robot_greed":
-        return `机器人金币 ×${(ROBOT_BASE_MULTIPLIER * (1 + ROBOT_GREED_PER_LEVEL * level)).toFixed(2)}`;
+        return `机器人金币 ×${(ROBOT_BASE_MULTIPLIER * ROBOT_GREED_RATE ** level).toFixed(2)}`;
       case "coin_pet":
         return `金币宠物强化 Lv.${level}`;
     }
