@@ -155,6 +155,7 @@ export class UIScene extends Phaser.Scene {
     this.services.events.on("arrow:resolved", this.handleArrowResolved, this);
     this.services.events.on("wallet:changed", this.handleWalletChanged, this);
     this.services.events.on("level:changed", this.handleLevelChanged, this);
+    this.services.events.on("level:cleared", this.handleLevelCleared, this);
     this.services.events.on("modal:changed", this.handleModalChanged, this);
     this.services.events.on("shop:changed", this.handleShopChanged, this);
     this.services.events.on("shop:purchased", this.handleShopPurchased, this);
@@ -275,6 +276,39 @@ export class UIScene extends Phaser.Scene {
   private handleChallengeEnded({ success }: { success: boolean }): void {
     this.challengeInfo?.setVisible(false);
     this.showResultBanner(success ? "挑战成功" : "挑战失败", success ? THEME.color.ok : THEME.color.high);
+    if (success) {
+      this.burstConfetti();
+    }
+  }
+
+  private handleLevelCleared(): void {
+    this.burstConfetti();
+    this.showResultBanner("通关！", THEME.color.ok);
+  }
+
+  /** 撒花庆祝：一批彩色碎片从顶部随机飘落旋转并淡出，用于通关与挑战成功。 */
+  private burstConfetti(): void {
+    const colors = [0xffd24a, 0xff5c8a, 0x4cd07d, 0xb98cff, 0x7fc8e8, 0xff9f45];
+    for (let i = 0; i < 26; i += 1) {
+      const startX = Phaser.Math.Between(240, GAME_WIDTH - 240);
+      const piece = this.add
+        .image(startX, -20, ASSET_KEYS.confettiPiece)
+        .setTint(colors[i % colors.length] ?? 0xffffff)
+        .setScale(Phaser.Math.FloatBetween(0.7, 1.2))
+        .setAngle(Phaser.Math.Between(0, 360))
+        .setDepth(1300);
+      this.tweens.add({
+        targets: piece,
+        y: Phaser.Math.Between(360, 620),
+        x: startX + Phaser.Math.Between(-90, 90),
+        angle: piece.angle + Phaser.Math.Between(180, 540),
+        alpha: { from: 1, to: 0 },
+        duration: Phaser.Math.Between(1100, 1700),
+        delay: Phaser.Math.Between(0, 220),
+        ease: "Cubic.In",
+        onComplete: () => piece.destroy(),
+      });
+    }
   }
 
   private showResultBanner(text: string, color: string): void {
@@ -487,6 +521,7 @@ export class UIScene extends Phaser.Scene {
     this.services?.events.off("arrow:resolved", this.handleArrowResolved, this);
     this.services?.events.off("wallet:changed", this.handleWalletChanged, this);
     this.services?.events.off("level:changed", this.handleLevelChanged, this);
+    this.services?.events.off("level:cleared", this.handleLevelCleared, this);
     this.services?.events.off("modal:changed", this.handleModalChanged, this);
     this.services?.events.off("shop:changed", this.handleShopChanged, this);
     this.services?.events.off("shop:purchased", this.handleShopPurchased, this);

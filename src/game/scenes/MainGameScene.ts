@@ -386,6 +386,8 @@ export class MainGameScene extends Phaser.Scene {
         return;
       }
       progression.clearLevelAndUnlockNext(current.id);
+      // 首次通关本关：触发通关庆祝（撒花 + 横幅）。
+      services.events.emit("level:cleared", { levelId: current.id });
     }
     this.transitionToLevel(current.id + 1);
   };

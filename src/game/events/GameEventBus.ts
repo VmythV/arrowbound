@@ -14,6 +14,7 @@ export type GameEventMap = {
   "coin:collected": { value: number; coins: number; source: CoinSource; point?: Point };
   "wallet:changed": { coins: number; delta: number; reason: "collect" | "spend" | "reward" };
   "level:changed": { levelId: number; normalCleared: boolean; clearCoinGoal: number };
+  "level:cleared": { levelId: number };
   "intent:go-next-level": Record<string, never>;
   "intent:go-previous-level": Record<string, never>;
   "intent:open-shop": Record<string, never>;

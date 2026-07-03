@@ -51,6 +51,7 @@ export const ASSET_KEYS = {
   goalFill: "ui-goal-fill",
   missDust: "effect-miss-dust",
   hitSpark: "effect-hit-spark",
+  confettiPiece: "effect-confetti-piece",
 } as const;
 
 export const VISUAL_ASSETS: readonly VisualAssetDefinition[] = [
@@ -84,6 +85,7 @@ export const VISUAL_ASSETS: readonly VisualAssetDefinition[] = [
   asset(ASSET_KEYS.goalFill, "ui/goal-fill.svg", 252, 8, "ui"),
   asset(ASSET_KEYS.missDust, "effects/miss-dust.svg", 96, 48, "effects"),
   asset(ASSET_KEYS.hitSpark, "effects/hit-spark.svg", 96, 96, "effects"),
+  asset(ASSET_KEYS.confettiPiece, "effects/confetti-piece.svg", 12, 16, "effects"),
 ] as const;
 
 function asset(
