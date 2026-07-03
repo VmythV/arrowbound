@@ -3,7 +3,8 @@ import type { Coin } from "../entities/Coin";
 import type { Point } from "../utils/ballistics";
 
 export type PetSystemConfig = {
-  readonly texture: string;
+  /** 按当前宠物等级返回进化外观纹理 key。 */
+  readonly getTexture: () => string;
   readonly homePoint: Point;
   readonly getMoveSpeed: () => number;
   readonly getPickupIntervalSeconds: () => number;
@@ -43,12 +44,18 @@ export class PetSystem {
    * 根据金币宠物是否解锁显示或移除唯一的一只宠物。
    */
   setActive(active: boolean): void {
-    if (active && this.sprite === undefined) {
-      this.sprite = this.scene.add
-        .image(this.config.homePoint.x, this.config.homePoint.y, this.config.texture)
-        .setDepth(40);
-      this.pickupCooldownLeft = 0;
-    } else if (!active && this.sprite !== undefined) {
+    if (active) {
+      const texture = this.config.getTexture();
+      if (this.sprite === undefined) {
+        this.sprite = this.scene.add
+          .image(this.config.homePoint.x, this.config.homePoint.y, texture)
+          .setDepth(40);
+        this.pickupCooldownLeft = 0;
+      } else if (this.sprite.texture.key !== texture) {
+        // 升级跨越进化阈值时切换外观。
+        this.sprite.setTexture(texture);
+      }
+    } else if (this.sprite !== undefined) {
       this.releaseSprite();
     }
   }

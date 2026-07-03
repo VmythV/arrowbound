@@ -44,6 +44,9 @@ export const ASSET_KEYS = {
   coinGlowing: "coin-glowing",
   robotBasic: "robot-basic",
   petBasic: "pet-basic",
+  petSatchel: "pet-satchel",
+  petWinged: "pet-winged",
+  petRadiant: "pet-radiant",
   chestBasic: "chest-basic",
   loadingTrack: "ui-loading-track",
   loadingFill: "ui-loading-fill",
@@ -89,6 +92,9 @@ export const VISUAL_ASSETS: readonly VisualAssetDefinition[] = [
   asset(ASSET_KEYS.coinGlowing, "coins/glowing-coin.svg", 64, 64, "coins"),
   asset(ASSET_KEYS.robotBasic, "robots/basic-robot.svg", 120, 180, "robots"),
   asset(ASSET_KEYS.petBasic, "pets/basic-pet.svg", 100, 80, "pets"),
+  asset(ASSET_KEYS.petSatchel, "pets/pet-satchel.svg", 100, 80, "pets"),
+  asset(ASSET_KEYS.petWinged, "pets/pet-winged.svg", 100, 80, "pets"),
+  asset(ASSET_KEYS.petRadiant, "pets/pet-radiant.svg", 100, 80, "pets"),
   asset(ASSET_KEYS.chestBasic, "chests/basic-chest.svg", 128, 112, "chests"),
   asset(ASSET_KEYS.hudPanel, "ui/hud-panel.svg", 1240, 72, "ui"),
   asset(ASSET_KEYS.hudPillLeft, "ui/hud-pill-left.svg", 360, 56, "ui"),
@@ -119,6 +125,14 @@ export const BACKGROUND_THEME_KEYS: readonly string[] = [
   ASSET_KEYS.backgroundTheme8,
   ASSET_KEYS.backgroundTheme9,
 ];
+
+/** 按金币宠物等级选取进化外观 key（Lv.10 钱袋 / Lv.20 翅膀 / Lv.30 发光）。 */
+export function petTextureForLevel(coinPetLevel: number): string {
+  if (coinPetLevel >= 30) return ASSET_KEYS.petRadiant;
+  if (coinPetLevel >= 20) return ASSET_KEYS.petWinged;
+  if (coinPetLevel >= 10) return ASSET_KEYS.petSatchel;
+  return ASSET_KEYS.petBasic;
+}
 
 /** 按关卡 id 选取主题背景 key。 */
 export function backgroundKeyForLevel(levelId: number): string {

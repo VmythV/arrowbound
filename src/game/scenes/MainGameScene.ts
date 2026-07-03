@@ -1,6 +1,6 @@
 import * as Phaser from "phaser";
 import { getGameServices, type GameServices } from "../GameServices";
-import { ASSET_KEYS, backgroundKeyForLevel } from "../config/asset-manifest";
+import { ASSET_KEYS, backgroundKeyForLevel, petTextureForLevel } from "../config/asset-manifest";
 import {
   ARROW_SPAWN_POSITION,
   CHALLENGE_DURATION_SECONDS,
@@ -131,7 +131,7 @@ export class MainGameScene extends Phaser.Scene {
       launch: (config) => this.projectiles?.launch(config),
     });
     this.pets = new PetSystem(this, {
-      texture: ASSET_KEYS.petBasic,
+      getTexture: () => petTextureForLevel(this.services?.shop.coinPetLevel ?? 1),
       homePoint: { x: 250, y: GROUND_Y - 74 },
       getMoveSpeed: () => this.services?.shop.petMoveSpeed() ?? 220,
       getPickupIntervalSeconds: () =>
