@@ -1,3 +1,19 @@
+@font-face {
+  font-family: "Baloo 2";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/assets/fonts/baloo2-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Baloo 2";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/assets/fonts/baloo2-800.woff2") format("woff2");
+}
+
 :root {
   color: #f8f1dc;
   background: #101827;

@@ -10,6 +10,27 @@ const files = execFileSync(
   .split("\0")
   .filter(Boolean);
 
+// Binary assets are not text; reading them as utf8 produces byte sequences that
+// can false-positive on the emoji pattern, so skip known binary extensions.
+const BINARY_EXTENSIONS = new Set([
+  "woff",
+  "woff2",
+  "ttf",
+  "otf",
+  "eot",
+  "png",
+  "jpg",
+  "jpeg",
+  "gif",
+  "webp",
+  "ico",
+  "mp3",
+  "ogg",
+  "wav",
+  "m4a",
+  "pdf",
+]);
+
 const failures = [];
 let scanned = 0;
 
@@ -17,6 +38,11 @@ for (const file of files) {
   // Skip symlinks (e.g. .claude/skills/* -> .agents/skills/*): the target
   // content is scanned via its real path, and directory symlinks would throw EISDIR.
   if (lstatSync(file).isSymbolicLink()) {
+    continue;
+  }
+
+  const extension = file.slice(file.lastIndexOf(".") + 1).toLowerCase();
+  if (BINARY_EXTENSIONS.has(extension)) {
     continue;
   }
 

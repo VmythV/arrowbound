@@ -1,6 +1,7 @@
 import * as Phaser from "phaser";
 import type { CoinSource } from "../systems/coin-income";
 import type { Point } from "../utils/ballistics";
+import { THEME } from "../config/theme";
 
 export type CoinSpawnConfig = {
   readonly id: number;
@@ -70,7 +71,7 @@ export class Coin extends Phaser.GameObjects.Image {
     const label = this.scene.add
       .text(config.origin.x, config.origin.y - 20, `+${config.value}`, {
         color: config.glow ? "#fff2b0" : "#ffe28a",
-        fontFamily: 'Inter, "Noto Sans SC", sans-serif',
+        fontFamily: THEME.fonts.display,
         fontSize: "18px",
         fontStyle: "bold",
         stroke: "#4a361c",
@@ -170,6 +171,7 @@ export class Coin extends Phaser.GameObjects.Image {
   playPickup(target: Point, onComplete: () => void): void {
     this.glow?.destroy();
     this.glow = undefined;
+    this.spawnPickupTrail(target);
     this.track(
       this.scene.tweens.add({
         targets: this,
@@ -216,6 +218,34 @@ export class Coin extends Phaser.GameObjects.Image {
     this.value = 0;
     this.animationsPaused = false;
     this.setActive(false).setVisible(false).setScale(1).setAlpha(1).setAngle(0).setPosition(0, 0);
+  }
+
+  /**
+   * 金粒拖尾：拾取起飞时留下几枚缩小的金币残影追向 HUD 计数后淡出，强化“数字上涨”反馈。
+   * 残影独立自毁，不进入回收流程。
+   */
+  private spawnPickupTrail(target: Point): void {
+    const startX = this.x;
+    const startY = this.y;
+    for (let i = 0; i < 3; i += 1) {
+      const spark = this.scene.add
+        .image(startX, startY, this.texture.key)
+        .setScale(this.restScale * (0.3 - i * 0.06))
+        .setAlpha(0.85)
+        .setTint(0xffe07a)
+        .setDepth(52);
+      this.scene.tweens.add({
+        targets: spark,
+        x: target.x,
+        y: target.y,
+        alpha: 0,
+        duration: PICKUP_DURATION_MS + i * 46,
+        delay: i * 26,
+        ease: "Cubic.In",
+        paused: this.animationsPaused,
+        onComplete: () => spark.destroy(),
+      });
+    }
   }
 
   private playBounce(landing: Point, bounces: number): void {

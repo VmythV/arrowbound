@@ -53,22 +53,19 @@ export class UIScene extends Phaser.Scene {
 
   create(): void {
     this.services = getGameServices(this.registry);
-    this.add.image(GAME_WIDTH / 2, 52, ASSET_KEYS.hudPanel);
-    this.add.text(42, 29, "ARROWBOUND", {
-      color: THEME.color.coin,
-      fontFamily: TITLE_FONT,
-      fontSize: "24px",
-      fontStyle: "bold",
-      letterSpacing: 2,
-    });
+    // 顶部三段胶囊 HUD：左=关卡，中=金币+目标进度条，右=本关祝福。
+    this.add.image(198, 42, ASSET_KEYS.hudPillLeft);
+    this.add.image(640, 42, ASSET_KEYS.hudPillCenter);
+    this.add.image(1082, 42, ASSET_KEYS.hudPillRight);
 
     this.levelText = this.add
-      .text(GAME_WIDTH - 42, 31, "", {
+      .text(46, 42, "", {
         color: THEME.color.title,
         fontFamily: BODY_FONT,
-        fontSize: "20px",
+        fontSize: "18px",
+        fontStyle: "bold",
       })
-      .setOrigin(1, 0);
+      .setOrigin(0, 0.5);
 
     this.coinIcon = this.add
       .image(COIN_HUD_ANCHOR.x, COIN_HUD_ANCHOR.y, ASSET_KEYS.coinBasic)
@@ -77,32 +74,32 @@ export class UIScene extends Phaser.Scene {
     this.coinsText = this.add
       .text(COIN_HUD_ANCHOR.x + 22, COIN_HUD_ANCHOR.y, this.formatCoins(this.displayedCoins), {
         color: THEME.color.coin,
-        fontFamily: BODY_FONT,
-        fontSize: "22px",
+        fontFamily: TITLE_FONT,
+        fontSize: "24px",
         fontStyle: "bold",
       })
       .setOrigin(0, 0.5);
 
     this.goalText = this.add
-      .text(COIN_HUD_ANCHOR.x + 150, COIN_HUD_ANCHOR.y, "", {
+      .text(588, COIN_HUD_ANCHOR.y, "", {
         color: THEME.color.body,
         fontFamily: BODY_FONT,
-        fontSize: "18px",
+        fontSize: "16px",
       })
       .setOrigin(0, 0.5);
 
-    // 常驻目标进度条：金币旁始终显示距离本关通关目标的进度。
-    this.add.image(COIN_HUD_ANCHOR.x + 22, 64, ASSET_KEYS.goalTrack).setOrigin(0, 0.5);
+    // 常驻目标进度条：金币下方始终显示距离本关通关目标的进度。
+    this.add.image(414, 54, ASSET_KEYS.goalTrack).setOrigin(0, 0.5);
     this.goalFill = this.add
-      .image(COIN_HUD_ANCHOR.x + 26, 64, ASSET_KEYS.goalFill)
+      .image(418, 54, ASSET_KEYS.goalFill)
       .setOrigin(0, 0.5)
       .setTint(THEME.hex.coin);
 
     this.blessingInfo = this.add
-      .text(42, 104, "", {
+      .text(924, 42, "", {
         color: THEME.color.magic,
         fontFamily: BODY_FONT,
-        fontSize: "16px",
+        fontSize: "15px",
         fontStyle: "bold",
       })
       .setOrigin(0, 0.5)
@@ -374,9 +371,7 @@ export class UIScene extends Phaser.Scene {
     const coins = services.ledger.coins;
 
     this.levelText?.setText(`第 ${level.id} 关  ${level.name}`);
-    this.goalText?.setText(
-      cleared ? `通关目标 ${level.clearCoinGoal} · 已通关` : `通关目标 ${level.clearCoinGoal}`,
-    );
+    this.goalText?.setText(cleared ? `目标 ${level.clearCoinGoal} 已通关` : `目标 ${level.clearCoinGoal}`);
 
     // 目标进度条：达标或已通关时填满并转为成功绿，牵引玩家继续。
     const goalFraction =
@@ -431,7 +426,7 @@ export class UIScene extends Phaser.Scene {
     if (blessingName === undefined) {
       this.blessingInfo?.setVisible(false);
     } else {
-      this.blessingInfo?.setVisible(true).setText(`本关祝福：${blessingName}`);
+      this.blessingInfo?.setVisible(true).setText(`祝福：${blessingName}`);
     }
   }
 
