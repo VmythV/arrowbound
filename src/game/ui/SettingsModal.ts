@@ -3,6 +3,7 @@ import { ASSET_KEYS } from "../config/asset-manifest";
 import { GAME_HEIGHT, GAME_WIDTH } from "../config/game.constants";
 import type { GameServices } from "../GameServices";
 import { THEME } from "../config/theme";
+import { PRESTIGE_UNLOCK_LEVEL } from "../systems/PrestigeService";
 
 const PANEL_X = GAME_WIDTH / 2;
 const PANEL_Y = 330;
@@ -26,6 +27,8 @@ export class SettingsModal {
   private readonly container: Phaser.GameObjects.Container;
   private readonly rows: VolumeRow[] = [];
   private readonly muteButton: Phaser.GameObjects.Text;
+  private readonly prestigeInfo: Phaser.GameObjects.Text;
+  private readonly prestigeButton: Phaser.GameObjects.Text;
   private openTween: Phaser.Tweens.Tween | undefined;
   private visible = false;
 
@@ -61,10 +64,22 @@ export class SettingsModal {
     this.muteButton = this.textButton(PANEL_X, 380, "", THEME.color.panelAlt, () => {
       this.services.events.emit("intent:toggle-mute", {});
     });
-    const resetButton = this.textButton(PANEL_X, 470, "清除存档并重新开始", THEME.color.danger, () => {
+    const resetButton = this.textButton(PANEL_X, 448, "清除存档并重新开始", THEME.color.danger, () => {
       this.services.events.emit("intent:reset-save", {});
     });
-    this.container.add([this.muteButton, resetButton]);
+    this.prestigeInfo = scene.add
+      .text(PANEL_X, 512, "", {
+        color: THEME.color.magic,
+        fontFamily: BODY_FONT,
+        fontSize: "17px",
+        align: "center",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5);
+    this.prestigeButton = this.textButton(PANEL_X, 556, "", "#6a3fae", () => {
+      this.services.events.emit("intent:prestige", {});
+    });
+    this.container.add([this.muteButton, resetButton, this.prestigeInfo, this.prestigeButton]);
   }
 
   get isOpen(): boolean {
@@ -113,6 +128,24 @@ export class SettingsModal {
       row.value.setText(`${Math.round(this.channelValue(row.channel) * 100)}%`);
     }
     this.muteButton.setText(settings.muted ? "静音：开" : "静音：关");
+
+    const prestige = this.services.prestige;
+    const highestCleared = this.services.progression.maxUnlockedLevelId - 1;
+    const pending = prestige.pendingStardust(highestCleared);
+    this.prestigeInfo.setText(
+      `星尘 ${prestige.stardust}   永久金币 ×${prestige.multiplier().toFixed(2)}   已转生 ${prestige.count} 次`,
+    );
+    if (pending > 0) {
+      this.prestigeButton
+        .setText(`转生：重置进度，获得 +${pending} 星尘`)
+        .setAlpha(1)
+        .setInteractive({ useHandCursor: true });
+    } else {
+      this.prestigeButton
+        .setText(`转生需先清过第 ${PRESTIGE_UNLOCK_LEVEL} 关`)
+        .setAlpha(0.5)
+        .disableInteractive();
+    }
   }
 
   destroy(): void {

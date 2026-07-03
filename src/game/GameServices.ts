@@ -8,6 +8,7 @@ import { AudioService } from "./systems/AudioService";
 import { BlessingService } from "./systems/BlessingService";
 import { CoinLedger } from "./systems/CoinLedger";
 import { GameClock } from "./systems/GameClock";
+import { PrestigeService } from "./systems/PrestigeService";
 import { ProgressionService } from "./systems/ProgressionService";
 import { RewardService } from "./systems/RewardService";
 import { SettingsService } from "./systems/SettingsService";
@@ -24,6 +25,7 @@ export type GameServices = {
   readonly random: RandomService;
   readonly ledger: CoinLedger;
   readonly progression: ProgressionService;
+  readonly prestige: PrestigeService;
   readonly shop: ShopService;
   readonly blessings: BlessingService;
   readonly rewards: RewardService;
@@ -49,6 +51,7 @@ export function createGameServices(
     initialSave.stats.totalCoinsEarned,
   );
   const progression = new ProgressionService(initialSave);
+  const prestige = new PrestigeService(initialSave.prestige);
   const shop = new ShopService(initialSave.shop);
   const blessings = new BlessingService(random, initialSave.rewards.pendingExtraBlessingChoices);
   const rewards = new RewardService(random, events, initialSave.rewards.pendingRewards);
@@ -61,6 +64,7 @@ export function createGameServices(
     repository,
     ledger,
     progression,
+    prestige,
     shop,
     blessings,
     rewards,
@@ -75,6 +79,7 @@ export function createGameServices(
     random,
     ledger,
     progression,
+    prestige,
     shop,
     blessings,
     rewards,

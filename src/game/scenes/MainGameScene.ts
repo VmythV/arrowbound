@@ -14,7 +14,7 @@ import {
   PLAYER_POSITION,
   SCENE_KEYS,
 } from "../config/game.constants";
-import type { PendingReward } from "../state/SaveData";
+import { createDefaultSaveData, type PendingReward } from "../state/SaveData";
 import { type LevelConfig } from "../config/level.config";
 import { ROBOT_CONFIG } from "../config/robot.config";
 import type { ShopItemId } from "../config/shop.config";
@@ -157,6 +157,7 @@ export class MainGameScene extends Phaser.Scene {
     this.services.events.on("intent:open-shop", this.handleOpenShop, this);
     this.services.events.on("intent:open-settings", this.handleOpenSettings, this);
     this.services.events.on("intent:reset-save", this.handleResetSave, this);
+    this.services.events.on("intent:prestige", this.handlePrestige, this);
     this.services.events.on("intent:adjust-volume", this.handleAdjustVolume, this);
     this.services.events.on("intent:toggle-mute", this.handleToggleMute, this);
     this.services.events.on("intent:close-modal", this.handleCloseModal, this);
@@ -260,7 +261,8 @@ export class MainGameScene extends Phaser.Scene {
     return {
       greedyCoinLevel: shop?.greedyCoinLevel ?? 0,
       robotGreedLevel: shop?.robotGreedLevel ?? 0,
-      allCoinMultiplier: blessing.allCoinMultiplier,
+      // 转生星尘的永久全局倍率与本关金币祝福相乘，同时作用于手动与机器人收益。
+      allCoinMultiplier: blessing.allCoinMultiplier * (this.services?.prestige.multiplier() ?? 1),
       tenRingMultiplier: blessing.tenRingMultiplier,
     };
   }
@@ -574,7 +576,36 @@ export class MainGameScene extends Phaser.Scene {
   };
 
   private readonly handleResetSave = (): void => {
+    // 先停后续持久化，避免 beforeunload 冲刷把已清除的存档又写回。
+    this.services?.saveService.disable();
     this.services?.repository.clear();
+    globalThis.location.reload();
+  };
+
+  /**
+   * 转生：以本轮最高通关关卡结算星尘，写入一份保留星尘/设置/统计、其余进度归零的新存档后刷新。
+   */
+  private readonly handlePrestige = (): void => {
+    const services = this.services;
+    if (services === undefined) {
+      return;
+    }
+    const highestCleared = services.progression.maxUnlockedLevelId - 1;
+    const gained = services.prestige.pendingStardust(highestCleared);
+    if (gained <= 0) {
+      return;
+    }
+    const current = services.saveService.buildSnapshot();
+    const reset = createDefaultSaveData();
+    reset.settings = current.settings;
+    reset.stats = current.stats;
+    reset.prestige = {
+      stardust: current.prestige.stardust + gained,
+      count: current.prestige.count + 1,
+    };
+    // 停后续持久化，写入转生后的新存档，再刷新（避免 beforeunload 覆盖）。
+    services.saveService.disable();
+    services.repository.save(reset);
     globalThis.location.reload();
   };
 
@@ -714,6 +745,7 @@ export class MainGameScene extends Phaser.Scene {
     this.services?.events.off("intent:open-shop", this.handleOpenShop, this);
     this.services?.events.off("intent:open-settings", this.handleOpenSettings, this);
     this.services?.events.off("intent:reset-save", this.handleResetSave, this);
+    this.services?.events.off("intent:prestige", this.handlePrestige, this);
     this.services?.events.off("intent:adjust-volume", this.handleAdjustVolume, this);
     this.services?.events.off("intent:toggle-mute", this.handleToggleMute, this);
     this.services?.events.off("intent:close-modal", this.handleCloseModal, this);

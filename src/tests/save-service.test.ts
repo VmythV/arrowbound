@@ -7,6 +7,7 @@ import { SaveService } from "../game/save/SaveService";
 import { BlessingService } from "../game/systems/BlessingService";
 import { CoinLedger, type ChallengeScoring } from "../game/systems/CoinLedger";
 import { GameClock } from "../game/systems/GameClock";
+import { PrestigeService } from "../game/systems/PrestigeService";
 import { ProgressionService } from "../game/systems/ProgressionService";
 import { RewardService } from "../game/systems/RewardService";
 import { SettingsService } from "../game/systems/SettingsService";
@@ -29,6 +30,7 @@ function buildServices(save: SaveData) {
   return {
     ledger: new CoinLedger(events, IDLE_CHALLENGE, save.player.coins, save.stats.totalCoinsEarned),
     progression: new ProgressionService(save),
+    prestige: new PrestigeService(save.prestige),
     shop: new ShopService(save.shop),
     blessings: new BlessingService(random, save.rewards.pendingExtraBlessingChoices),
     rewards: new RewardService(random, events, save.rewards.pendingRewards),
@@ -59,6 +61,7 @@ describe("SaveService round-trip", () => {
       repository,
       ledger: services.ledger,
       progression: services.progression,
+      prestige: services.prestige,
       shop: services.shop,
       blessings: services.blessings,
       rewards: services.rewards,

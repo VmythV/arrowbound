@@ -171,6 +171,15 @@ export function migrateAndNormalize(raw: unknown): SaveData {
     };
   }
 
+  // 转生数据在 v2 引入；v1 存档没有此字段时保留默认 {0, 0}。
+  const prestige = asRecord(record["prestige"]);
+  if (prestige !== undefined) {
+    base.prestige = {
+      stardust: toNonNegativeInt(prestige["stardust"], 0),
+      count: toNonNegativeInt(prestige["count"], 0),
+    };
+  }
+
   base.version = CURRENT_SAVE_VERSION;
   return base;
 }

@@ -3,6 +3,7 @@ import { CURRENT_SAVE_VERSION, type SaveData } from "../state/SaveData";
 import type { BlessingService } from "../systems/BlessingService";
 import type { CoinLedger } from "../systems/CoinLedger";
 import type { GameClock, ClockTaskId } from "../systems/GameClock";
+import type { PrestigeService } from "../systems/PrestigeService";
 import type { ProgressionService } from "../systems/ProgressionService";
 import type { RewardService } from "../systems/RewardService";
 import type { SettingsService } from "../systems/SettingsService";
@@ -16,6 +17,7 @@ export type SaveServiceDependencies = {
   readonly repository: SaveRepository;
   readonly ledger: CoinLedger;
   readonly progression: ProgressionService;
+  readonly prestige: PrestigeService;
   readonly shop: ShopService;
   readonly blessings: BlessingService;
   readonly rewards: RewardService;
@@ -31,6 +33,7 @@ const COIN_SAVE_DEBOUNCE_MS = 2_000;
  */
 export class SaveService {
   private debounceTaskId: ClockTaskId | undefined;
+  private disabled = false;
 
   constructor(private readonly deps: SaveServiceDependencies) {
     const events = deps.events;
@@ -66,6 +69,7 @@ export class SaveService {
         ...this.deps.stats.snapshot(),
         totalCoinsEarned: this.deps.ledger.totalCoinsEarned,
       },
+      prestige: this.deps.prestige.toSaveData(),
     };
   }
 
@@ -73,6 +77,9 @@ export class SaveService {
    * 立即保存当前完整进度。
    */
   readonly saveNow = (): void => {
+    if (this.disabled) {
+      return;
+    }
     this.cancelDebounce();
     this.deps.repository.save(this.buildSnapshot());
   };
@@ -82,6 +89,15 @@ export class SaveService {
    */
   flush(): void {
     this.saveNow();
+  }
+
+  /**
+   * 停止一切后续持久化。用于转生/清档：调用方直接写入目标存档后刷新页面时，
+   * 避免 `beforeunload` 冲刷把当前内存态又写回，覆盖目标存档。
+   */
+  disable(): void {
+    this.disabled = true;
+    this.cancelDebounce();
   }
 
   destroy(): void {
@@ -100,6 +116,9 @@ export class SaveService {
   }
 
   private handleWalletChanged({ reason }: { reason: string }): void {
+    if (this.disabled) {
+      return;
+    }
     if (reason === "collect") {
       this.scheduleDebouncedSave();
     } else {

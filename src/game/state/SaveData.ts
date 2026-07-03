@@ -1,7 +1,7 @@
 import { INITIAL_PLAYER_COINS } from "../config/game.constants";
 import type { ShopItemId } from "../config/shop.config";
 
-export const CURRENT_SAVE_VERSION = 1;
+export const CURRENT_SAVE_VERSION = 2;
 
 export type PendingRewardSource = "challenge" | "lucky_first_ten";
 export type PendingRewardType = "coins" | "shop_level" | "extra_blessing_choice";
@@ -61,6 +61,11 @@ export type SaveData = {
     totalCoinsEarned: number;
     totalTenRingHits: number;
   };
+  /** 局外永久成长（转生）：累计星尘与转生次数，转生时保留、其余进度重置。 */
+  prestige: {
+    stardust: number;
+    count: number;
+  };
 };
 
 export function createDefaultSaveData(): SaveData {
@@ -107,6 +112,10 @@ export function createDefaultSaveData(): SaveData {
       totalHits: 0,
       totalCoinsEarned: 0,
       totalTenRingHits: 0,
+    },
+    prestige: {
+      stardust: 0,
+      count: 0,
     },
   };
 }
